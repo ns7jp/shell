@@ -1,0 +1,6 @@
+*.log
+*.tar.gz
+.tmp/
+evidence/local/
+config/*.conf
+!config/*.conf.example

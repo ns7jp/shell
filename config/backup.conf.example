@@ -1,0 +1,5 @@
+# 学習時は自分が読み書きできる専用ディレクトリに変更してください。
+SOURCE_DIR=/srv/example-app/data
+BACKUP_DIR=/var/backups/example-app
+RETENTION_DAYS=7
+ARCHIVE_PREFIX=example-app
