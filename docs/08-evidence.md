@@ -14,8 +14,8 @@
 |---|---|---|
 | Bash構文検証 | PASS | 2026-08-28、Git for Windows Bash 5.3.15、全5ファイル `bash -n` 終了0 |
 | 自己完結テスト | PASS | 2026-08-28、Git for Windows Bash 5.3.15、12/12成功、終了0 |
-| ShellCheck | NOT RUN | `make lint` の実行記録を追記する |
-| GitHub Actions | NOT RUN | push後のActions URLを追記する |
+| ShellCheck | PASS (CI) | PR #1、Ubuntu runner、`shell-quality`、2026-08-28 |
+| GitHub Actions | PASS | PR #1、コミット `aa5a3fa` で `All checks have passed` を確認 |
 | Ubuntu VM監査 | NOT RUN | VM情報と監査ログが必要 |
 | バックアップ作成・復元 | NOT RUN | archiveと`diff -r`結果が必要 |
 | ログ圧縮・保持 | NOT RUN | テストログと前後比較が必要 |
@@ -44,7 +44,7 @@ result: PASS
 evidence: whitespace errorなし（改行コード変換の警告はあり）
 ```
 
-この結果はGit for Windows上のテスト証跡です。Ubuntu VM、systemd、実運用サービスでの確認を代替しません。`make` と `shellcheck` はローカル環境に存在しなかったため `NOT RUN` のままです。
+この結果はGit for Windows上のローカルテスト証跡です。Ubuntu VM、systemd、実運用サービスでの確認を代替しません。ローカルの `make lint` はShellCheckが存在しなかったため `NOT RUN` ですが、GitHub ActionsのUbuntu runnerではShellCheckを実行してPASSしました。
 
 実行後は次の形式で追記します。
 
