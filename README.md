@@ -50,6 +50,7 @@ make test
 8. [面接説明ガイド](docs/07-interview-guide.md)で成果を自分の言葉にする
 9. [検証証跡](docs/08-evidence.md)で実施済みと未実施を区別する
 10. [用語集・チートシート](docs/09-glossary-cheatsheet.md)で5語の流れを復習する
+11. [サーバー構築ポートフォリオへの発展計画](docs/10-server-build-roadmap.md)で不足範囲と次の成果物を確認する
 
 ## ディレクトリ構成
 
