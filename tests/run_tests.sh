@@ -33,11 +33,23 @@ chmod 600 "$tmp_dir/backup.conf"
 
 assert_status 'backup dry-run succeeds' 0 bash "$ROOT_DIR/scripts/backup.sh" --config "$tmp_dir/backup.conf"
 assert_contains 'backup dry-run is visible' '[DRY-RUN]'
-[[ -z $(find "$tmp_dir/backups" -type f -print -quit) ]] && ok 'dry-run creates no archive' || not_ok 'dry-run creates no archive'
+if [[ -z $(find "$tmp_dir/backups" -type f -print -quit) ]]; then
+  ok 'dry-run creates no archive'
+else
+  not_ok 'dry-run creates no archive'
+fi
 assert_status 'backup execute succeeds' 0 bash "$ROOT_DIR/scripts/backup.sh" --config "$tmp_dir/backup.conf" --execute
 archive=$(find "$tmp_dir/backups" -type f -name 'test_*.tar.gz' -print -quit)
-[[ -n $archive && -s $archive ]] && ok 'execute creates archive' || not_ok 'execute creates archive'
-tar -tzf "$archive" | grep -Fq 'source/data.txt' && ok 'archive contains source file' || not_ok 'archive contains source file'
+if [[ -n $archive && -s $archive ]]; then
+  ok 'execute creates archive'
+else
+  not_ok 'execute creates archive'
+fi
+if tar -tzf "$archive" | grep -Fq 'source/data.txt'; then
+  ok 'archive contains source file'
+else
+  not_ok 'archive contains source file'
+fi
 
 cat >"$tmp_dir/unsafe.conf" <<'EOF'
 SOURCE_DIR=/

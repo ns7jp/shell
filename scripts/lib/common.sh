@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-readonly EXIT_OK=0
-readonly EXIT_WARNING=1
-readonly EXIT_ERROR=2
+# 共通ライブラリの利用側スクリプトから参照する定数です。
+# shellcheck disable=SC2034
+readonly EXIT_OK=0 EXIT_WARNING=1 EXIT_ERROR=2
 
 timestamp() { date '+%Y-%m-%dT%H:%M:%S%z'; }
 log() { local level=$1; shift; printf '%s [%s] %s\n' "$(timestamp)" "$level" "$*"; }

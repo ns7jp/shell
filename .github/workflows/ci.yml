@@ -11,7 +11,7 @@ jobs:
   shell-quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Run syntax and self-contained tests
         run: make check
       - name: Run ShellCheck
