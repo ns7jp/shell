@@ -1,0 +1,5 @@
+LOG_DIR=/var/log/example-app
+ARCHIVE_DIR=/var/log/example-app/archive
+COMPRESS_AFTER_DAYS=1
+DELETE_AFTER_DAYS=30
+LOG_PATTERN=*.log

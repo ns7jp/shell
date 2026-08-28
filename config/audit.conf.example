@@ -1,0 +1,8 @@
+# しきい値は整数のパーセントで指定します。
+CPU_WARN_PERCENT=80
+MEMORY_WARN_PERCENT=80
+DISK_WARN_PERCENT=80
+
+# 空白区切り。存在しないサービスは警告になります。
+CHECK_SERVICES="ssh cron"
+LOG_DIR=/var/log
