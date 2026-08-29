@@ -57,3 +57,17 @@ echo "$?"
 ## 覚え方
 
 「引数を受ける → 値を疑う → 処理する → 結果を再確認する → 終了コードで伝える」の5段階を、どのスクリプトでも同じ順に探してください。
+
+## 演習5: PythonでJSON証跡を作る
+
+監査の `--output` でログを保存し、Pythonへ渡します。Bashがサーバーを調べ、Pythonが報告しやすい形へ整える流れです。
+
+```bash
+./scripts/server_audit.sh --config config/audit.conf --output "$PWD/audit.log"
+python3 scripts/audit_report.py --input "$PWD/audit.log" --output "$PWD/audit.json"
+status=$?
+python3 -m json.tool "$PWD/audit.json"
+printf '変換終了コード=%s\n' "$status"
+```
+
+JSONの `counts` はレベル別件数、`result` は総合判定、`entries` は明細です。`WARN` があれば変換に成功しても終了1、不正な行や読取失敗なら終了2です。「ファイルができた」だけでなく、終了コードと中身を確認してください。

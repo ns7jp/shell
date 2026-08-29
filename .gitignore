@@ -1,6 +1,10 @@
+__pycache__/
+*.py[cod]
 *.log
 *.tar.gz
 .tmp/
 evidence/local/
 config/*.conf
 !config/*.conf.example
+audit.log
+audit.json
