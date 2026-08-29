@@ -5,18 +5,20 @@
 - Ubuntu 22.04または24.04のVM
 - CPU 2、メモリ2GB、空きディスク10GB程度
 - NATネットワーク（外部公開しない）
-- Git、Bash、Make、tar、gzip、findutils
+- Git、Bash、Python 3.10以上、Make、tar、gzip、findutils
 
 ## セットアップ
 
 ```bash
 sudo apt update
-sudo apt install -y git make shellcheck
+sudo apt install -y git make shellcheck python3
 git clone https://github.com/ns7jp/shell.git
 cd shell
 chmod +x scripts/*.sh tests/run_tests.sh
 make check
 ```
+
+`bash --version` と `python3 --version` を証跡へ記録します。追加Pythonパッケージは使わないため、`pip install` は不要です。
 
 ## 安全な練習データ
 

@@ -19,6 +19,9 @@
 | T-09 | schedule | cron/systemd timer | 指定時刻に1回実行 | NOT RUN |
 | T-10 | production | 本番相当容量 | 性能・容量条件を満たす | NOT RUN |
 | T-11 | backup | SOURCE_DIR未定義 | 終了2、項目名を表示 | 自動 |
+| T-12 | report | OKログ | 終了0、件数を持つJSON | 自動 |
+| T-13 | report | WARNログ | 終了1、総合判定WARN | 自動 |
+| T-14 | report | 不正形式 | 終了2、JSONを作成しない | 自動 |
 
 ## 実行方法
 
