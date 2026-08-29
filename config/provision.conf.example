@@ -1,0 +1,11 @@
+# 構築・受け入れ試験の両方で共通して使う設定です。
+# provision_web_server.sh が作り、build_verify.sh が確認します。
+PACKAGE_NAME=nginx
+SERVICE_NAME=nginx
+WEB_ROOT=/var/www/html
+SITE_TITLE="Sample Portfolio Web Server"
+
+# 空白区切りでTCPポートを列挙します。ufwが導入済みの場合だけ適用します。
+ALLOWED_TCP_PORTS="22 80"
+HTTP_PORT=80
+HEALTHCHECK_PATH=/

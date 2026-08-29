@@ -67,6 +67,20 @@ tar -tzf /backup/path/archive.tar.gz
 証跡: ログの保存場所
 ```
 
+## 構築直後の引き継ぎ
+
+`provision_web_server.sh --execute` でサーバーを構築した直後は、`build_verify.sh` で受け入れ試験を行ってから日次点検へ引き継ぎます。
+
+```bash
+./scripts/build_verify.sh --config /secure/path/provision.conf --output /secure/path/evidence/build-$(date +%F).log
+build_status=$?
+./scripts/server_audit.sh --config /secure/path/audit.conf --output /secure/path/evidence/audit-$(date +%F).log
+audit_status=$?
+printf 'build=%s audit=%s\n' "$build_status" "$audit_status"
+```
+
+`build_verify.sh` が警告なしを返してから、通常の日次点検へ引き継ぎます。詳細は[構築ハンズオン](13-build-hands-on.md)を参照してください。
+
 ## 定期実行
 
 cronやsystemd timerへの登録例は、環境、実行ユーザー、ロック、通知、ログ保存先を設計してから作ります。本リポジトリでは実環境登録を `NOT RUN` としています。
