@@ -81,6 +81,76 @@ chmod 600 "$tmp_dir/audit.conf"
 assert_status 'audit rejects invalid threshold' 2 bash "$ROOT_DIR/scripts/server_audit.sh" --config "$tmp_dir/audit.conf"
 assert_contains 'audit threshold error explains range' '1 から 100 の範囲'
 
+## 構築(provision_web_server.sh)のテスト -------------------------------------
+mkdir -p "$tmp_dir/webroot"
+cat >"$tmp_dir/provision.conf" <<EOF
+PACKAGE_NAME=nginx
+SERVICE_NAME=nginx
+WEB_ROOT=$tmp_dir/webroot
+SITE_TITLE="Test Site"
+ALLOWED_TCP_PORTS="22 80"
+HTTP_PORT=80
+HEALTHCHECK_PATH=/
+EOF
+chmod 600 "$tmp_dir/provision.conf"
+
+dryrun_output=$(bash "$ROOT_DIR/scripts/provision_web_server.sh" --config "$tmp_dir/provision.conf" 2>&1) && dryrun_status=0 || dryrun_status=$?
+if (( dryrun_status <= 1 )); then ok 'provision dry-run does not error'; else not_ok 'provision dry-run does not error'; printf '%s\n' "$dryrun_output"; fi
+if grep -Fq '[DRY-RUN]' <<<"$dryrun_output"; then ok 'provision dry-run shows planned commands'; else not_ok 'provision dry-run shows planned commands'; fi
+if [[ ! -e "$tmp_dir/webroot/index.html" ]]; then ok 'provision dry-run creates no file'; else not_ok 'provision dry-run creates no file'; fi
+
+cat >"$tmp_dir/provision_bad_port.conf" <<EOF
+PACKAGE_NAME=nginx
+SERVICE_NAME=nginx
+WEB_ROOT=$tmp_dir/webroot
+SITE_TITLE="Test Site"
+HTTP_PORT=70000
+EOF
+chmod 600 "$tmp_dir/provision_bad_port.conf"
+assert_status 'provision rejects out-of-range port' 2 bash "$ROOT_DIR/scripts/provision_web_server.sh" --config "$tmp_dir/provision_bad_port.conf"
+assert_contains 'port rejection explains range' '1 から 65535 の範囲'
+
+cat >"$tmp_dir/provision_missing.conf" <<EOF
+SERVICE_NAME=nginx
+WEB_ROOT=$tmp_dir/webroot
+SITE_TITLE="Test Site"
+EOF
+chmod 600 "$tmp_dir/provision_missing.conf"
+assert_status 'provision rejects missing package name' 2 bash "$ROOT_DIR/scripts/provision_web_server.sh" --config "$tmp_dir/provision_missing.conf"
+assert_contains 'missing package name explains cause' 'PACKAGE_NAME は必須'
+
+cat >"$tmp_dir/provision_danger.conf" <<EOF
+PACKAGE_NAME=nginx
+SERVICE_NAME=nginx
+WEB_ROOT=/etc
+SITE_TITLE="Test Site"
+EOF
+chmod 600 "$tmp_dir/provision_danger.conf"
+assert_status 'provision rejects dangerous web root' 2 bash "$ROOT_DIR/scripts/provision_web_server.sh" --config "$tmp_dir/provision_danger.conf"
+assert_contains 'dangerous web root explains cause' '重要なシステムディレクトリ'
+
+if [[ $(id -u) -ne 0 ]]; then
+  assert_status 'provision --execute without root is rejected' 2 bash "$ROOT_DIR/scripts/provision_web_server.sh" --config "$tmp_dir/provision.conf" --execute
+  assert_contains 'root requirement message explains cause' 'root権限が必要です'
+else
+  ok 'provision root requirement check skipped (running as root)'
+fi
+
+## 受け入れ試験(build_verify.sh)のテスト ---------------------------------------
+assert_status 'build_verify rejects invalid config' 2 bash "$ROOT_DIR/scripts/build_verify.sh" --config "$tmp_dir/provision_bad_port.conf"
+
+cat >"$tmp_dir/verify_never.conf" <<EOF
+PACKAGE_NAME=zzz-does-not-exist-package
+SERVICE_NAME=zzz-does-not-exist-service
+WEB_ROOT=$tmp_dir/no-such-webroot
+HTTP_PORT=1
+HEALTHCHECK_PATH=/
+EOF
+chmod 600 "$tmp_dir/verify_never.conf"
+assert_status 'build_verify reports warnings for an unbuilt server' 1 bash "$ROOT_DIR/scripts/build_verify.sh" --config "$tmp_dir/verify_never.conf"
+assert_contains 'build_verify explains missing package' 'パッケージ未導入'
+assert_contains 'build_verify explains missing file' '配布ファイルが見つかりません'
+
 printf '1..%d\n' "$((pass + fail))"
 printf '# pass=%d fail=%d\n' "$pass" "$fail"
 (( fail == 0 ))
