@@ -63,7 +63,7 @@ dpkg -s nginx | head -n 3
 cat /var/www/html/index.html
 ```
 
-`--execute` が成功すると、パッケージ導入とファイル配置の直後に自己確認が走り、「構築直後の自己確認が完了しました」というOKログが出ます。検証環境によっては、その後の2箇所がWARN（終了コード1）になることがあります。これは安全機構が正しく働いている証拠なので、隠さず記録します。
+`--execute` を実行すると、パッケージ導入・ファイル配置に続けてufwとsystemdの設定を試み、最後に自己確認が走って「構築直後の自己確認が完了しました」というOKログが出ます。検証環境によっては、この自己確認より前の2箇所（ufwとsystemd）がWARN（終了コード1）になることがあります。これは安全機構が正しく働いている証拠なので、隠さず記録します。
 
 - systemdが動いていないコンテナ環境では、`systemctl enable --now` に失敗し「systemd経由でのサービス起動に失敗、または未対応の環境です: nginx（手動起動と自動起動設定を確認してください）」という警告になります。実際のUbuntu VMではsystemdが動くため成功する想定です。
 - `ufw` が未導入の環境では「ufw が見つからないためファイアウォール設定をスキップしました（手動確認が必要）」という警告になり、ファイアウォール設定はスキップされます。実際のUbuntu VMでは `ufw` を導入したうえで確認する想定です（検証環境に依存します）。
@@ -73,7 +73,7 @@ cat /var/www/html/index.html
 `build_verify.sh` は構築後の受け入れ試験です。`--output` でログをファイルに保存し、既存の `scripts/audit_report.py` でJSON証跡に変換します。使い方は、`server_audit.sh` のログをJSON化したとき（[初心者向けハンズオン](04-hands-on.md) の演習5）とまったく同じです。ログの書式（`日時 [LEVEL] メッセージ`）が共通だからで、`audit_report.py` の側は変更していません。
 
 ```bash
-sudo ./scripts/build_verify.sh --config config/provision.conf --output "$PWD/build-verify.log"
+./scripts/build_verify.sh --config config/provision.conf --output "$PWD/build-verify.log"
 python3 scripts/audit_report.py --input "$PWD/build-verify.log" --output "$PWD/build-verify.json"
 status=$?
 python3 -m json.tool "$PWD/build-verify.json"
