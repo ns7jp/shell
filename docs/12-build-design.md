@@ -6,12 +6,14 @@
 
 ```text
 利用者
-  └─ --config / --execute
-       ├─ provision_web_server.sh ── 導入・配置・ufw・systemd ── パッケージ → Webサーバー一式
-       └─ build_verify.sh ──────── 確認 ─────────────────────── Webサーバー → OK/WARN判定
-               └─ scripts/lib/common.sh（ログ、検証、終了コード）
-       └─ audit_report.py ── 解析 ── 構築ログ → JSON証跡
+  ├─ provision_web_server.sh --config FILE [--execute] ── 導入・配置・ufw・systemd ── パッケージ → Webサーバー一式
+  │       └─ scripts/lib/common.sh（ログ、検証、終了コード）
+  ├─ build_verify.sh --config FILE [--output FILE] ────── 確認 ───────────────────── Webサーバー → OK/WARN判定
+  │       └─ scripts/lib/common.sh（ログ、検証、終了コード）
+  └─ audit_report.py --input FILE --output FILE ── 解析 ── 構築ログ → JSON証跡
 ```
+
+（`provision_web_server.sh`に`--output`はなく、`build_verify.sh`に`--execute`はありません。両方が受け付けるのは`--config`だけです。）
 
 `provision_web_server.sh` はパッケージ導入、サンプルページ配置、ufw（Ubuntu標準のファイアウォール管理コマンド）設定、systemd（Linuxでサービスの起動・自動起動を管理する仕組み）への登録までを担当します。`build_verify.sh` はその結果を後から確認するだけで、何も変更しません。既存の `audit_report.py`（[02. 基本設計](02-design.md)で使っているログ→JSON変換スクリプト）は、構築系のログもそのまま読み込めます。理由は後述します。
 
@@ -160,7 +162,7 @@ python3 scripts/audit_report.py --input build-verify.log --output build-verify.j
 | 危険な設定の拒否 | `WEB_ROOT=/etc`、範囲外の`HTTP_PORT`、`PACKAGE_NAME`等の必須項目の記入漏れは、いずれも終了コード2で拒否されます（確認済み）。 |
 | root権限のない`--execute` | 終了コード2で拒否されます（確認済み）。 |
 
-自動テストとしては`tests/run_tests.sh`の「## 構築(provision_web_server.sh)のテスト」以降で、これらの正常系・異常系を再現できるようにしています。詳しいテスト方針は[05. テスト仕様](05-test-plan.md)を参照してください。
+自動テストとしては`tests/run_tests.sh`の「## 構築(provision_web_server.sh)のテスト」以降で、これらの正常系・異常系を再現できるようにしています。詳しいテスト方針は[14. 構築テスト仕様](14-build-test-plan.md)を参照してください（運用パックのテストは[05. テスト仕様](05-test-plan.md)にまとめています）。
 
 ## セキュリティ設計
 
