@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# 誤答例: ドライランのつもりでも実際にコピーしてしまいます（E14 の題材に使います）。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+src=''
+dst=''
+execute=false
+while (($#)); do
+  case "$1" in
+    --src) [[ $# -ge 2 ]] || die '--src に値が必要です'; src=$2; shift 2 ;;
+    --dst) [[ $# -ge 2 ]] || die '--dst に値が必要です'; dst=$2; shift 2 ;;
+    --execute) execute=true; shift ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $src ]] || die '--src は必須です'
+[[ -n $dst ]] || die '--dst は必須です'
+require_absolute_safe_path SRC "$src"
+require_absolute_safe_path DST "$dst"
+[[ -d $src && -r $src ]] || die "コピー元を読み取れません: $src"
+[[ $dst != "$src" && $dst != "$src"/* ]] || die 'コピー先をコピー元の配下に置くことはできません'
+
+# ここが誤りです。execute を見ずに必ずコピーしています。
+mkdir -p -- "$dst"
+cp -a -- "$src/." "$dst/"
+log OK "コピーが完了しました: $dst"

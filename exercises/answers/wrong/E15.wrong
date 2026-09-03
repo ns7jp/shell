@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# 誤答例: 最初の警告で止めてしまい、残りの項目を確かめていません。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+dir=''
+while (($#)); do
+  case "$1" in
+    --dir) [[ $# -ge 2 ]] || die '--dir に値が必要です'; dir=$2; shift 2 ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $dir ]] || die '--dir は必須です'
+require_absolute_safe_path DIR "$dir"
+[[ -d $dir ]] || die "確認するディレクトリがありません: $dir"
+
+target="$dir/index.html"
+
+# ここが誤りです。1件目の警告でその場を離れてしまいます。
+if [[ ! -e $target ]]; then
+  log WARN "ありません: $target"
+  exit "$EXIT_WARNING"
+fi
+log OK "ある: $target"
+
+if [[ ! -s $target ]]; then
+  log WARN "中身: 空か、読めません"
+  exit "$EXIT_WARNING"
+fi
+log OK "中身: 空ではありません"
+
+mode=$(stat -c '%a' -- "$target" 2>/dev/null || printf '取得できません')
+if [[ $mode != 644 ]]; then
+  log WARN "権限: 644 ではありません（$mode）"
+  exit "$EXIT_WARNING"
+fi
+log OK "権限: $mode"
+
+log OK '受け入れ試験完了: 警告なし'

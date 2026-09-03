@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 誤答例: || を && と書いたため、そろっているときに die してしまいます。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+config_path=''
+while (($#)); do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die '--config に値が必要です'; config_path=$2; shift 2 ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $config_path ]] || die '--config は必須です'
+load_config "$config_path"
+
+# ここが誤りです。「空でなければ die」になっています。
+[[ -n ${SOURCE_DIR:-} ]] && die 'SOURCE_DIR は必須です'
+[[ -n ${BACKUP_DIR:-} ]] && die 'BACKUP_DIR は必須です'
+[[ -n ${ARCHIVE_PREFIX:-} ]] && die 'ARCHIVE_PREFIX は必須です'
+
+log OK '必須3項目がそろっています'

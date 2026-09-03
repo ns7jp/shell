@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# 誤答例: 終了コードを 1 と直書きしています。
+# 動きはしますが、読み手には「なぜ 1 なのか」が伝わりません。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+config_path=''
+while (($#)); do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die '--config に値が必要です'; config_path=$2; shift 2 ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+[[ -n $config_path ]] || die '--config は必須です'
+load_config "$config_path"
+[[ -n ${TARGET_DIR:-} ]] || die 'TARGET_DIR は必須です'
+: "${CHECK_FILES:=}"
+require_absolute_safe_path TARGET_DIR "$TARGET_DIR"
+
+warnings=0
+log INFO "点検を開始します: $TARGET_DIR"
+for check_name in $CHECK_FILES; do
+  if [[ -s "$TARGET_DIR/$check_name" ]]; then
+    log OK "あります: $check_name"
+  else
+    log WARN "ありません: $check_name"
+    warnings=$((warnings + 1))
+  fi
+done
+
+# ここが誤りです。定数を使わず 1 を直書きしています。
+if ((warnings > 0)); then
+  log WARN "点検完了: 警告 ${warnings} 件"
+  exit 1
+fi
+log OK '点検完了: 警告なし'

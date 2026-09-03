@@ -3,7 +3,7 @@
 E01	L0	-	-	終了コードを自分の目で確かめる	15	L0/answer.txt	-	X0
 E02	L0	-	-	5語スパインを backup.sh に接地させる	20	L0/spine_map.tsv	-	S1
 E03	L0	-	-	共通ライブラリを借りてログを1行出す	20	L0/hello.sh	E03.start.tmpl	S5
-E04	L1	受ける	A	骨9要素を写す（写経A）	30	L1/spine.sh	spine.tmpl	T3
+E04	L1	受ける	A	骨9要素を写す（写経A）	30	L1/spine.sh	-	T3
 E05	L1	受ける	B	--config を受け取る（穴埋めB）	40	L1/argparse.sh	E05.blank.tmpl	S1
 E06	L1	受ける	C	白紙から引数解析（白紙C）	45	L1/argparse2.sh	answer.sh.tmpl	T3
 E07	L2	疑う	A	必須3項目を写す（写経A）	30	L2/require3.sh	E07.start.tmpl	S2

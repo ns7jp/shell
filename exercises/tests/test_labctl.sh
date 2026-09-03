@@ -79,6 +79,90 @@ fi
 catalog_rows=$(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv" | wc -l)
 if [[ $catalog_rows == 21 ]]; then ok '演習は21問'; else not_ok "演習は21問 (実測 $catalog_rows)"; fi
 
+## 全21問が5点セットをそろえているか -------------------------------------------
+missing=''
+while IFS=$'\t' read -r id level _ _ _ _ _ _ _; do
+  [[ $id == E* ]] || continue
+  [[ -f "$ROOT_DIR/exercises/levels/$level/$id.md" ]] || missing="$missing $id:問題文"
+  [[ -f "$ROOT_DIR/exercises/levels/$level/$id.hints.md" ]] || missing="$missing $id:ヒント"
+  [[ -f "$ROOT_DIR/exercises/checks/$id.check.sh" ]] || missing="$missing $id:採点"
+  if [[ ! -d "$ROOT_DIR/exercises/answers/$id.ref" ]] && ! compgen -G "$ROOT_DIR/exercises/answers/$id.ref.*" >/dev/null; then
+    missing="$missing $id:模範解答"
+  fi
+  if [[ ! -d "$ROOT_DIR/exercises/answers/wrong/$id.wrong.d" ]] && [[ ! -f "$ROOT_DIR/exercises/answers/wrong/$id.wrong" ]]; then
+    missing="$missing $id:誤答例"
+  fi
+done < <(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv")
+if [[ -z $missing ]]; then
+  ok '全21問に問題文・ヒント・採点・模範解答・誤答例がある'
+else
+  printf '%s\n' "$missing" >"$tmp_dir/output"
+  not_ok '全21問に問題文・ヒント・採点・模範解答・誤答例がある'
+fi
+
+## ヒントの見出しが3段階そろっているか -----------------------------------------
+hint_problem=''
+while IFS=$'\t' read -r id level _; do
+  [[ $id == E* ]] || continue
+  hints="$ROOT_DIR/exercises/levels/$level/$id.hints.md"
+  [[ -f $hints ]] || continue
+  for step in H1 H2 H3; do
+    grep -q "^## $step " "$hints" || hint_problem="$hint_problem $id:$step"
+  done
+done < <(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv")
+if [[ -z $hint_problem ]]; then
+  ok 'ヒントはすべて H1 / H2 / H3 の3段階'
+else
+  printf '%s\n' "$hint_problem" >"$tmp_dir/output"
+  not_ok 'ヒントはすべて H1 / H2 / H3 の3段階'
+fi
+
+## 案内ドキュメントの一覧表が実物と一致するか ----------------------------------
+doc_missing=''
+while IFS= read -r id; do
+  grep -Fq "| $id |" "$ROOT_DIR/docs/15-exercise-pack-guide.md" || doc_missing="$doc_missing $id"
+done < <(awk -F'\t' '$1 ~ /^E[0-9]+$/ {print $1}' "$ROOT_DIR/exercises/exercises.tsv")
+if [[ -z $doc_missing ]]; then
+  ok 'docs/15 の一覧表に21問すべてが載っている'
+else
+  printf '%s\n' "$doc_missing" >"$tmp_dir/output"
+  not_ok 'docs/15 の一覧表に21問すべてが載っている'
+fi
+
+## start 直後の未着手状態が合格してしまわないか ---------------------------------
+# 雛形が答えそのものになっていると、学習者が何もしなくても合格してしまいます。
+trivial=''
+export LAB_HOME="$tmp_dir/trivial"
+bash "$LABCTL" init >/dev/null 2>&1
+while IFS=$'\t' read -r id _; do
+  [[ $id == E* ]] || continue
+  bash "$LABCTL" start "$id" >/dev/null 2>&1
+  status=0
+  bash "$LABCTL" grade "$id" >/dev/null 2>&1 || status=$?
+  [[ $status == 0 ]] && trivial="$trivial $id"
+done < <(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv")
+export LAB_HOME="$tmp_dir/lab"
+if [[ -z $trivial ]]; then
+  ok '未着手の答案はどの問題も合格しない'
+else
+  printf '手を動かさずに合格する演習:%s\n' "$trivial" >"$tmp_dir/output"
+  not_ok '未着手の答案はどの問題も合格しない'
+fi
+
+## 暗記カードの関連演習IDが実在するか ------------------------------------------
+card_problem=''
+while IFS=$'\t' read -r card_id _ _ _ related; do
+  [[ $card_id == \#* || -z $card_id ]] && continue
+  awk -F'\t' -v want="$related" '$1 == want {found = 1} END {exit !found}' "$ROOT_DIR/exercises/exercises.tsv" \
+    || card_problem="$card_problem $card_id->$related"
+done <"$ROOT_DIR/exercises/cards/cards.tsv"
+if [[ -z $card_problem ]]; then
+  ok '暗記カードの関連演習IDが実在する'
+else
+  printf '%s\n' "$card_problem" >"$tmp_dir/output"
+  not_ok '暗記カードの関連演習IDが実在する'
+fi
+
 printf '1..%d\n' "$((pass + fail))"
 printf '# pass=%d fail=%d\n' "$pass" "$fail"
 (( fail == 0 ))

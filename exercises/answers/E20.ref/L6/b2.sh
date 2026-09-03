@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# b2: アーカイブの整合性を確認します。
+# 直し済み: $? を対象コマンドの直後で受け取ります（バグ3種の2つ目、終了コード）。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: b2.sh --archive FILE' 'アーカイブを読み直して整合性を確認します。'
+}
+
+archive=''
+while (($#)); do
+  case "$1" in
+    --archive) [[ $# -ge 2 ]] || die '--archive に値が必要です'; archive=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $archive ]] || die '--archive は必須です'
+[[ -f $archive ]] || die "アーカイブがありません: $archive"
+
+status=0
+tar -tzf "$archive" >/dev/null 2>&1 || status=$?
+
+if ((status != 0)); then
+  log WARN "アーカイブが壊れています: $archive"
+  exit "$EXIT_WARNING"
+fi
+log OK "アーカイブは正常です: $archive"

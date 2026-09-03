@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# __1__ と __2__ の2か所を埋めます。それ以外の行は変えません。
+# 詰まったら: bash exercises/labctl.sh hint @LAB_ID@
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: idem.sh --dest DIR' '2回実行しても結果は変わりません。'
+}
+
+# --- 受ける ----------------------------------------------------------------
+dest=''
+while (($#)); do
+  case "$1" in
+    --dest) [[ $# -ge 2 ]] || die '--dest に値が必要です'; dest=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+# --- 疑う ------------------------------------------------------------------
+[[ -n $dest ]] || die '--dest は必須です'
+require_absolute_safe_path DEST "$dest"
+
+src="${LAB_FIXTURES:?LAB_FIXTURES が未設定です}/E11/app.conf"
+dst="$dest/conf/app.conf"
+[[ -f $src ]] || die "教材ファイルがありません: $src"
+
+# --- 動かす（ここが2つの穴です） -------------------------------------------
+# __1__ : 出力先 "$dest" を作ります。2回目でもエラーにならない書き方にします。
+__1__
+# __2__ : "$src" を "$dst" へ、権限 0644 で配置します。途中のディレクトリも作ります。
+__2__
+
+# --- 伝える ----------------------------------------------------------------
+log OK "配置しました: $dst"
+exit "$EXIT_OK"

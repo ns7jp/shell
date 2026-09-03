@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# 「受ける」「疑う」「動かす」までは書いてあります。
+# あなたが写すのは「確かめる」の2行だけです。
+# 詰まったら: bash exercises/labctl.sh hint @LAB_ID@
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: mkarc.sh --src DIR --dst DIR' 'DIR を tar.gz にまとめ、作った後に読み直します。'
+}
+
+# --- 受ける ----------------------------------------------------------------
+src=''
+dst=''
+while (($#)); do
+  case "$1" in
+    --src) [[ $# -ge 2 ]] || die '--src に値が必要です'; src=$2; shift 2 ;;
+    --dst) [[ $# -ge 2 ]] || die '--dst に値が必要です'; dst=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+# --- 疑う ------------------------------------------------------------------
+[[ -n $src ]] || die '--src は必須です'
+[[ -n $dst ]] || die '--dst は必須です'
+require_absolute_safe_path SRC "$src"
+require_absolute_safe_path DST "$dst"
+[[ -d $src && -r $src ]] || die "アーカイブ元を読み取れません: $src"
+require_command tar
+
+# --- 動かす ----------------------------------------------------------------
+archive="$dst/$(basename -- "$src").tar.gz"
+log INFO "アーカイブ元: $src"
+log INFO "保存先: $archive"
+mkdir -p -- "$dst"
+tar -C "$(dirname -- "$src")" -czf "$archive" -- "$(basename -- "$src")"
+
+# --- 確かめる（ここに2行を写します） ---------------------------------------
+# 見本は scripts/backup.sh の46〜47行です。
+# TODO: $archive が「存在して、かつ0バイトでない」ことを確かめ、駄目なら die します
+# TODO: tar -tzf で中身を読み直し、駄目なら die します
+
+# --- 伝える ----------------------------------------------------------------
+log OK "アーカイブを作成し、読み直しました: $archive"

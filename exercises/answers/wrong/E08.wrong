@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# 誤答例: 共通関数があるのに、同じ判定を自分で書き直しています（車輪の再発明）。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+PORT=${PORT:-}
+[[ -n $PORT ]] || die 'PORT は必須です'
+
+# ここが誤りです。require_integer_range と同じ判定を2箇所に持っています。
+[[ $PORT =~ ^[0-9]+$ ]] || die 'PORT は整数で指定してください'
+((PORT >= 1 && PORT <= 65535)) || die 'PORT は 1 から 65535 の範囲で指定してください'
+
+log OK "PORT=$PORT は使えます"

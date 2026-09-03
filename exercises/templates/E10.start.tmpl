@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# 「受ける」と「疑う」は書いてあります。あなたが写すのは「動かす」の1行だけです。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: dry.sh --dest DIR [--execute]' '既定はドライランです。'
+}
+
+# --- 受ける ----------------------------------------------------------------
+DEST=''
+execute=false
+while (($#)); do
+  case "$1" in
+    --dest) [[ $# -ge 2 ]] || die '--dest に値が必要です'; DEST=$2; shift 2 ;;
+    --execute) execute=true; shift ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+# --- 疑う ------------------------------------------------------------------
+[[ -n $DEST ]] || die '--dest は必須です'
+require_absolute_safe_path DEST "$DEST"
+
+# --- 動かす（ここに1行だけ写します） ---------------------------------------
+# 見本は scripts/backup.sh の41行目です。同じ形で書きます。
+# TODO: run_or_show を使って mkdir -p -- "$DEST" を1行で書きます
+
+# --- 伝える ----------------------------------------------------------------
+log OK '完了しました'
+exit "$EXIT_OK"

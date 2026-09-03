@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# b1: 指定したディレクトリの下に out/report.txt を作ります。
+# 空白を含むディレクトリ名を渡すと、思ったとおりに動きません。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: b1.sh --dir DIR' '指定したディレクトリの下に out/report.txt を作ります。'
+}
+
+dir=''
+while (($#)); do
+  case "$1" in
+    --dir) [[ $# -ge 2 ]] || die '--dir に値が必要です'; dir=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $dir ]] || die '--dir は必須です'
+[[ -d $dir ]] || die "ディレクトリがありません: $dir"
+
+target=$dir/out
+mkdir -p $target
+printf 'ok\n' > $target/report.txt
+log OK "作成しました: $target/report.txt"

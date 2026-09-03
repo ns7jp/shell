@@ -22,6 +22,7 @@
 | プロビジョニング | サーバーを望ましい状態に構築すること | `provision_web_server.sh` |
 | ファイアウォール | 許可した通信だけ通す仕組み | `ufw allow 80/tcp` |
 | 受け入れ試験 | 構築直後に完成条件を確認する試験 | `build_verify.sh` |
+| `pipefail` | パイプの途中で失敗しても見逃さない設定 | `set -Eeuo pipefail` |
 
 ## 調査コマンド
 

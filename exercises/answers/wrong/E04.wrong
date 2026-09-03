@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# 誤答例: 見ながら「だいたい」写したため、要素が3つ欠けています。
+# 欠けているもの: 2/9 安全設定（set -eu と短く書いた）、
+#                 7/9 ドライラン既定の処理（run_or_show を使わず直接実行した）、
+#                 8/9 成果物の確認（[[ -s ... ]] を書かなかった）。
+set -eu
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+usage() {
+  printf '%s\n' 'Usage: spine.sh --config FILE [--execute]'
+}
+
+config_path=''
+execute=false
+while (($#)); do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die '--config に値が必要です'; config_path=$2; shift 2 ;;
+    --execute) execute=true; shift ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+[[ -n $config_path ]] || die '--config は必須です'
+load_config "$config_path"
+require_absolute_safe_path DEST_DIR "${DEST_DIR:-}"
+
+mkdir -p -- "$DEST_DIR"
+
+log OK '完了しました'
+exit "$EXIT_OK"

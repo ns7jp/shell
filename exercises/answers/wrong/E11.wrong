@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# 誤答例: 出力ファイル名に日時を入れたため、実行のたびにファイルが増えます。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+dest=''
+while (($#)); do
+  case "$1" in
+    --dest) [[ $# -ge 2 ]] || die '--dest に値が必要です'; dest=$2; shift 2 ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $dest ]] || die '--dest は必須です'
+require_absolute_safe_path DEST "$dest"
+
+src="${LAB_FIXTURES:?LAB_FIXTURES が未設定です}/E11/app.conf"
+dst="$dest/conf/app.conf"
+[[ -f $src ]] || die "教材ファイルがありません: $src"
+
+mkdir -p -- "$dest"
+install -D -m 0644 -- "$src" "$dst"
+# ここが誤りです。世代を残す必要がないのに、名前へ日時を入れています。
+install -D -m 0644 -- "$src" "$dest/conf/app_$(date '+%s%N').conf"
+
+log OK "配置しました: $dst"
+exit "$EXIT_OK"

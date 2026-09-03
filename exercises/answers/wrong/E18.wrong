@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# 誤答例: 判定を PASS で固定しています。終了コード1でも PASS と書いてしまいます。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+status=''
+test_id='E18'
+while (($#)); do
+  case "$1" in
+    --status) [[ $# -ge 2 ]] || die '--status に値が必要です'; status=$2; shift 2 ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $status ]] || die '--status は必須です'
+
+printf '%s\n' \
+  "テストID: $test_id" \
+  "日時・タイムゾーン: $(timestamp)" \
+  "実行者: $(id -un)" \
+  "環境(OS/Bash/commit): $(uname -sr) / Bash $BASH_VERSION" \
+  "実行コマンド: bash exercises/labctl.sh grade $test_id" \
+  "期待結果: 終了コード0（全判定を満たす）" \
+  "実結果: 終了コード $status" \
+  "終了コード: $status" \
+  "判定(PASS/FAIL/NOT RUN): PASS"
