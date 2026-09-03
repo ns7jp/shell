@@ -30,6 +30,9 @@
 | 実Ubuntu VMでの構築・再起動後のsystemd自動起動 | NOT RUN | コンテナにはsystemdがなく確認不能。実VMでの確認が必要 |
 | 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 |
 | Ansible等による構成管理の再現性 | NOT RUN | [構築ロードマップ](10-server-build-roadmap.md)のPhase 2相当、未着手 |
+| 演習パックの採点器の自己検査 | PASS | `make lab-selfcheck`（模範解答で合格・誤答で不合格を全問検証） |
+| 演習パックのShellCheck | PASS | `make lab-lint` 終了0 |
+| 学習者本人による演習21問の完走 | NOT RUN | 学習者ごとに実施し、下の「演習パック」節へ記録します |
 
 ## ローカル検証記録
 
@@ -118,3 +121,33 @@ evidence:
 ```
 
 スクリーンショットだけでなく、再現可能なテキストログとコマンドを優先します。秘密情報、ユーザー名、内部IP、ホスト名は公開前にマスキングしてください。
+
+## 演習パック（学習者本人の記録）
+
+[Bash演習案件パック](15-exercise-pack-guide.md)の達成記録を残す場所です。判定の意味は上と同じで、`PASS` / `FAIL` / `NOT RUN` を使います。
+
+進捗表は次のコマンドで出力し、生成された `progress.md` の表をここへ貼ります。
+
+```bash
+bash exercises/labctl.sh progress --save
+cat "$HOME/bash-lab/progress/progress.md"
+```
+
+1問ぶんの証跡は、[テスト仕様](05-test-plan.md)と同じテンプレート形式で出力できます。
+
+```bash
+bash exercises/labctl.sh evidence E09
+```
+
+| 項目 | 状態 | 証跡 |
+|---|---|---|
+| L0（E01〜E03） | NOT RUN | 進捗表を貼る |
+| L1（E04〜E06） | NOT RUN | 進捗表を貼る |
+| L2（E07〜E09） | NOT RUN | 進捗表を貼る |
+| L3（E10〜E12） | NOT RUN | 進捗表を貼る |
+| L4（E13〜E15） | NOT RUN | 進捗表を貼る |
+| L5（E16〜E18） | NOT RUN | 進捗表を貼る |
+| L6（E19〜E21） | NOT RUN | 進捗表を貼る |
+| 自由再生テスト（`labctl recall`） | NOT RUN | `recall.log` の合格記録（日付が2種類以上） |
+
+面接では、この表を「何を実施し、何をまだ実施していないか」の順で説明します。未実施を実施済みとして扱わないことが、この台帳の目的です。

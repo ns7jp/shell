@@ -16,6 +16,7 @@
 | `backup.sh` | 指定ディレクトリを世代付きで圧縮保存 | あり | 既定はドライラン、入力検証、保存先分離 |
 | `rotate_app_logs.sh` | 古いアプリログを圧縮・削除 | あり | 既定はドライラン、対象拡張子・経過日数を限定 |
 | `audit_report.py` | 点検ログ・構築ログをJSON証跡へ変換 | JSON作成 | 入力形式を全行検証、原子的に出力 |
+| `exercises/labctl.sh` | Bash演習21問の出題・採点・進捗記録 | 学習者の作業場のみ | root不要、使い捨てサンドボックス、答案は複製して実行 |
 
 `audit_report.py` はログ書式（`日時 [LEVEL] メッセージ`）を全スクリプトで統一しているため、点検ログにも構築ログにも同じ1本を使い回せます。
 
@@ -59,6 +60,7 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 
 ## 学習ルート
 
+0. [Bash演習案件パック](exercises/README.md)で手を動かす（[案内](docs/15-exercise-pack-guide.md) / [暗記チートシート](docs/17-memory-cheatsheet.md)）
 1. [案件概要](docs/00-project-overview.md)で依頼と完成条件をつかむ
 2. [要件定義](docs/01-requirements.md)で「何を作るか」を読む
 3. [基本設計](docs/02-design.md)で処理の流れと安全策を理解する
@@ -74,6 +76,7 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 13. [構築ハンズオン](docs/13-build-hands-on.md)で検証環境に実際にNginxを構築する
 14. [構築テスト仕様](docs/14-build-test-plan.md)で構築の完成条件を確認する
 15. [サーバー構築ポートフォリオへの発展計画](docs/10-server-build-roadmap.md)で不足範囲と次の成果物を確認する
+16. [演習パックの採点設計](docs/16-exercise-grading-design.md)で、採点をどう機械化したかを読む
 
 ## ディレクトリ構成
 
@@ -81,6 +84,7 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 config/               設定例（本番値や秘密情報は置かない）
 docs/                 要件、設計、構築、テスト、運用、証跡
 examples/             実行結果の読み方
+exercises/            Bash演習21問と採点ツール（root不要）
 scripts/              実装
 scripts/lib/          共通関数
 tests/                root不要の自動テスト
@@ -95,6 +99,7 @@ Makefile              検証コマンドの入口
 - **保守性:** 共通処理を `scripts/lib/common.sh` に集約し、証跡化は `audit_report.py` 1本を構築・運用の両方で再利用
 - **検証可能性:** 成功・警告・入力エラーを終了コードで区別し自動テスト
 - **説明責任:** 実行日時、コマンド、期待値、結果を証跡テンプレートに記録
+- **育成可能性:** 演習21問を自動採点し、「模範解答で合格・誤答で不合格」をCIで毎回検証
 
 ## 現在の検証範囲
 
