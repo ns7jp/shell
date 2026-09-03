@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# __1__ から __3__ の3か所を埋めます。それ以外の行は変えません。
+# 出力の形は tests/run_tests.sh の9〜22行と同じです。
+# 詰まったら: bash exercises/labctl.sh hint @LAB_ID@
+set -Eeuo pipefail
+
+# 被テストスクリプトの場所は環境変数で受けます。パスを直書きしてはいけません。
+# __1__ : TARGET_SCRIPT があればそれを、無ければ $HOME/bash-lab/L3/copyjob.sh を使う書き方
+target=__1__
+
+tmp_dir=$(mktemp -d)
+trap 'rm -rf -- "$tmp_dir"' EXIT
+pass=0
+fail=0
+ok() { printf 'ok - %s\n' "$1"; pass=$((pass + 1)); }
+not_ok() { printf 'not ok - %s\n' "$1"; fail=$((fail + 1)); }
+
+assert_status() {
+  local name=$1 expected=$2
+  shift 2
+  local actual=0
+  "$@" >"$tmp_dir/output" 2>&1 || actual=$?
+  if [[ $actual == "$expected" ]]; then ok "$name"; else not_ok "$name (expected=$expected actual=$actual)"; fi
+}
+
+assert_contains() {
+  local name=$1 needle=$2
+  # __2__ : $tmp_dir/output に needle が含まれれば ok、含まれなければ not_ok を呼ぶ1行
+  __2__
+}
+
+mkdir -p "$tmp_dir/src"
+printf 'data\n' >"$tmp_dir/src/data.txt"
+
+# 1) ドライラン（--execute なし）
+assert_status 'dry-run succeeds' 0 bash "$target" --src "$tmp_dir/src" --dst "$tmp_dir/dst"
+# __3__ : ここに「ドライランのあと $tmp_dir/dst ができていないこと」を確かめる分岐を書きます
+#         できていなければ ok を、できていれば not_ok を呼びます
+__3__
+
+# 2) --execute つき
+assert_status 'execute succeeds' 0 bash "$target" --src "$tmp_dir/src" --dst "$tmp_dir/dst" --execute
+if [[ -s "$tmp_dir/dst/data.txt" ]]; then ok 'execute copies the file'; else not_ok 'execute copies the file'; fi
+
+# 3) 不明な引数
+assert_status 'unknown option is rejected' 2 bash "$target" --src "$tmp_dir/src" --dst "$tmp_dir/dst" --nosuch
+assert_contains 'unknown option explains cause' '不明な引数です'
+
+printf '1..%d\n' "$((pass + fail))"
+printf '# pass=%d fail=%d\n' "$pass" "$fail"
+(( fail == 0 ))

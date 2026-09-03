@@ -20,6 +20,18 @@ jobs:
           sudo apt-get install -y shellcheck
           make lint
 
+  exercise-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+      - name: Lint exercise pack
+        run: make lab-lint
+      - name: Self-check the grader
+        run: make lab-selfcheck
   powershell-quality:
     # PowerShell演習案件パックは、Linux(CI用)とWindows(本来の対象)の両方で確認します。
     # Windows専用の確認はテスト側で対象外にし、OSごとに確認する内容も変えるため、合格件数はOSで異なります。
@@ -65,3 +77,4 @@ jobs:
               exit 1
           }
           Write-Output 'PSScriptAnalyzer OK'
+

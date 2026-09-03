@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# 「受ける」「疑う」「確かめる」までは書いてあります。
+# あなたが写すのは最後の「伝える」だけです（骨9要素の9番目）。
+# 見本は scripts/server_audit.sh の92〜96行です。
+# 詰まったら: bash exercises/labctl.sh hint @LAB_ID@
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: report.sh --config FILE' '終了コード: 0=警告なし、1=警告あり、2=実行エラー'
+}
+
+# --- 受ける ----------------------------------------------------------------
+config_path=''
+while (($#)); do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die '--config に値が必要です'; config_path=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+# --- 疑う ------------------------------------------------------------------
+[[ -n $config_path ]] || die '--config は必須です'
+load_config "$config_path"
+[[ -n ${TARGET_DIR:-} ]] || die 'TARGET_DIR は必須です'
+: "${CHECK_FILES:=}"
+require_absolute_safe_path TARGET_DIR "$TARGET_DIR"
+
+# --- 確かめる --------------------------------------------------------------
+warnings=0
+log INFO "点検を開始します: $TARGET_DIR"
+for check_name in $CHECK_FILES; do
+  if [[ -s "$TARGET_DIR/$check_name" ]]; then
+    log OK "あります: $check_name"
+  else
+    log WARN "ありません: $check_name"
+    warnings=$((warnings + 1))
+  fi
+done
+
+# --- 伝える（ここから下を自分で写します） ----------------------------------
+# TODO: warnings が 1 以上なら、件数を入れた log WARN を出してから
+#       exit "$EXIT_WARNING" で終わります（1 とは書きません）
+# TODO: そうでなければ log OK を1行出して、そのまま最後まで進みます

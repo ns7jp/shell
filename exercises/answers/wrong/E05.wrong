@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# 誤答例: --config の「値があるか」を疑っていません。
+# そのため --config を値なしで指定したときに終了2になりません（NO_VALUE で不合格）。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+usage() {
+  printf '%s\n' 'Usage: argparse.sh --config FILE [--execute]'
+}
+
+config_path=''
+execute=false
+while (($#)); do
+  case "$1" in
+    --config) config_path=$2; shift 2 ;;
+    --execute) execute=true; shift ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+[[ -n $config_path ]] || die '--config は必須です'
+printf 'config=%s execute=%s\n' "$config_path" "$execute"

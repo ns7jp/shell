@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# 誤答例: log を通らない見出し行を混ぜたため、ログが書式外になります。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: audit_run.sh --config FILE [--output FILE]' '--output を付けると、画面と同じログをファイルにも残します。'
+}
+
+# --- 受ける ----------------------------------------------------------------
+config_path=''
+output_path=''
+while (($#)); do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die '--config に値が必要です'; config_path=$2; shift 2 ;;
+    --output) [[ $# -ge 2 ]] || die '--output に値が必要です'; output_path=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+
+# --- 疑う ------------------------------------------------------------------
+[[ -n $config_path ]] || die '--config は必須です'
+load_config "$config_path"
+[[ -n ${TARGET_DIR:-} ]] || die 'TARGET_DIR は必須です'
+: "${CHECK_FILES:=}"
+require_absolute_safe_path TARGET_DIR "$TARGET_DIR"
+
+# --- 伝えるための準備（--output のときだけ） -------------------------------
+if [[ -n $output_path ]]; then
+  require_absolute_safe_path OUTPUT_PATH "$output_path"
+  mkdir -p -- "$(dirname -- "$output_path")"
+  # 標準出力も標準エラーも、画面とファイルの両方へ流します。
+  exec > >(tee "$output_path") 2>&1
+fi
+
+# --- 確かめる --------------------------------------------------------------
+# 出力はすべて log 関数を通します。log を通らない行を混ぜると、
+# audit_report.py が「書式外の行」として終了2になります。
+# ここが誤りです。log を通らない行はログの書式から外れます。
+printf '=== 点検結果 ===\n'
+log INFO "点検を開始します: $TARGET_DIR"
+for check_name in $CHECK_FILES; do
+  if [[ -s "$TARGET_DIR/$check_name" ]]; then
+    log OK "あります: $check_name"
+  else
+    log WARN "ありません: $check_name"
+  fi
+done
+log INFO '点検を終了しました。証跡は audit_report.py でJSONにします'

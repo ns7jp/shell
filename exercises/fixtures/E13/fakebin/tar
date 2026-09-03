@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# E13 の採点で使う「偽の tar」です。問題文の第8節で開示しています。
+# 「成功したと言うのに、中身の無いアーカイブを作る」道具を再現します。
+# 学習者の環境の本物の tar は一切変更しません。採点のときだけ PATH の先頭に置きます。
+set -u
+
+mode=''
+archive=''
+while (($#)); do
+  case "$1" in
+    -czf|-zcf|-cf) mode=create; archive=${2:-}; shift 2 ;;
+    -tzf|-ztf|-tf) mode=list; archive=${2:-}; shift 2 ;;
+    *) shift ;;
+  esac
+done
+
+case "$mode" in
+  create)
+    [[ -n $archive ]] || exit 0
+    : >"$archive"   # 0バイトのアーカイブを作り、成功したと言い張ります
+    exit 0
+    ;;
+  list) exit 0 ;;
+  *) exit 0 ;;
+esac

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# 誤答例: run_or_show を通していないため、ドライランでもディレクトリを作ってしまいます。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+DEST=''
+execute=false
+while (($#)); do
+  case "$1" in
+    --dest) [[ $# -ge 2 ]] || die '--dest に値が必要です'; DEST=$2; shift 2 ;;
+    --execute) execute=true; shift ;;
+    -h|--help) exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $DEST ]] || die '--dest は必須です'
+require_absolute_safe_path DEST "$DEST"
+
+# ここが誤りです。execute を見ずに、いきなり作っています。
+mkdir -p -- "$DEST"
+
+log OK "完了しました（execute=$execute）"
+exit "$EXIT_OK"

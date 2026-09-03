@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# 「受ける」までは書いてあります。あなたが写すのは「疑う」の3行だけです。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: require3.sh --config FILE'
+}
+
+# --- 受ける ----------------------------------------------------------------
+config_path=''
+while (($#)); do
+  case "$1" in
+    --config) [[ $# -ge 2 ]] || die '--config に値が必要です'; config_path=$2; shift 2 ;;
+    -h|--help) usage; exit "$EXIT_OK" ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+[[ -n $config_path ]] || die '--config は必須です'
+load_config "$config_path"
+
+# --- 疑う（ここから3行を写します） -----------------------------------------
+# 見本は scripts/backup.sh の24〜25行です。同じ形で3回書きます。
+# TODO: SOURCE_DIR が空なら die します
+# TODO: BACKUP_DIR が空なら die します
+# TODO: ARCHIVE_PREFIX が空なら die します
+
+# --- 伝える ----------------------------------------------------------------
+log OK '必須3項目がそろっています'

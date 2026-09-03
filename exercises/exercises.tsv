@@ -1,0 +1,23 @@
+# Bash演習案件パックの唯一の一覧表です。labctl.sh とドキュメントはこの表だけを参照します。
+# 列: ID / レベル / 5語(スパイン) / 段階(A=写経 B=穴埋め C=白紙 -=その他) / 題名 / 目安分 / 作業ファイル($HOME/bash-lab からの相対) / 雛形 / カードID
+E01	L0	-	-	終了コードを自分の目で確かめる	15	L0/answer.txt	-	X0
+E02	L0	-	-	5語スパインを backup.sh に接地させる	20	L0/spine_map.tsv	-	S1
+E03	L0	-	-	共通ライブラリを借りてログを1行出す	20	L0/hello.sh	E03.start.tmpl	S5
+E04	L1	受ける	A	骨9要素を写す（写経A）	30	L1/spine.sh	-	T3
+E05	L1	受ける	B	--config を受け取る（穴埋めB）	40	L1/argparse.sh	E05.blank.tmpl	S1
+E06	L1	受ける	C	白紙から引数解析（白紙C）	45	L1/argparse2.sh	answer.sh.tmpl	T3
+E07	L2	疑う	A	必須3項目を写す（写経A）	30	L2/require3.sh	E07.start.tmpl	S2
+E08	L2	疑う	B	範囲チェックは共通関数を呼ぶ（穴埋めB）	30	L2/port.sh	E08.blank.tmpl	M4
+E09	L2	疑う	C	白紙で検証ブロック（白紙C）	55	L2/validate.sh	answer.sh.tmpl	T1
+E10	L3	動かす	A	run_or_show を写す（写経A）	30	L3/dry.sh	E10.start.tmpl	S3
+E11	L3	動かす	B	2回実行しても同じ（穴埋めB）	40	L3/idem.sh	E11.blank.tmpl	S3
+E12	L3	動かす	C	白紙でドライラン既定（白紙C）	55	L3/copyjob.sh	answer.sh.tmpl	S3
+E13	L4	確かめる	A	作った後に読み直す（写経A）	35	L4/mkarc.sh	E13.start.tmpl	T2
+E14	L4	確かめる	B	落ちるテストを書く（穴埋めB）	45	L4/my_tests.sh	E14.blank.tmpl	T3
+E15	L4	確かめる	C	白紙で受け入れ試験（白紙C）	55	L4/verify_dir.sh	answer.sh.tmpl	T2
+E16	L5	伝える	A	3段階の終了コードを配る（写経A）	30	L5/report.sh	E16.start.tmpl	X1
+E17	L5	伝える	B	ログをJSON証跡にする（穴埋めB）	45	L5/audit_run.sh	E17.blank.tmpl	S5
+E18	L5	伝える	C	白紙で証跡1式（白紙C）	45	L5/evidence.sh	answer.sh.tmpl	S5
+E19	L6	-	-	小さな backup.sh を白紙で作る	80	L6/mini_backup.sh	answer.sh.tmpl	S1
+E20	L6	-	-	壊れたスクリプトを直す（総合デバッグ）	60	L6/notes.md	-	T4
+E21	L6	-	-	見ずに言えるかを確かめる（引き継ぎ）	40	L6/talk.md	-	S1

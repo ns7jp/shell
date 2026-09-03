@@ -1,0 +1,18 @@
+# 暗記カードはこの17枚だけです。増やしません。列: カードID / デッキ / 表 / 裏 / 関連演習ID
+S1	spine	受ける とは	引数と設定を受け取る。--config / --execute / --help / 不明引数の4分岐	E05
+S2	spine	疑う とは	値・権限・対象を検証する。ある→形→範囲→場所の順	E07
+S3	spine	動かす とは	ドライランで見せてから処理する。既定は安全側、危険は明示	E10
+S4	spine	確かめる とは	作った成果物を読み直す。ある・中身・権限	E13
+S5	spine	伝える とは	ログと終了コードで結果を伝える。書式が同じなら道具は使い回せる	E16
+X0	exitcodes	終了コード 0	無事。証跡を保存して次へ進む	E01
+X1	exitcodes	終了コード 1	注意。WARN行を読んで自分の答案を直す	E16
+X2	exitcodes	終了コード 2	無理。環境か引数を直して再実行する	E01
+M1	messages	「重要なシステムディレクトリ」と出たら	require_absolute_safe_path が /etc などそのものを拒否した	E09
+M2	messages	「空でない絶対パス」と出たら	require_absolute_safe_path が相対パスや空文字を拒否した	E09
+M3	messages	「.. は使用できません」と出たら	require_absolute_safe_path が親ディレクトリ参照を拒否した	E09
+M4	messages	「1 から 65535 の範囲」と出たら	require_integer_range が範囲外の値を拒否した	E08
+M5	messages	「他ユーザーから書き込み可能」と出たら	load_config が設定ファイルの権限を拒否した。chmod 600 で直す	E07
+T1	order	疑う順は	ある→形→範囲→場所	E09
+T2	order	確かめる3点は	ある・中身・権限	E15
+T3	order	学習の3段階は	写す→埋める→書く	E04
+T4	order	バグ3種は	引用符・終了コード・パイプ	E20

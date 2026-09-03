@@ -22,6 +22,7 @@
 | `backup.sh` | 指定ディレクトリを世代付きで圧縮保存 | あり | 既定はドライラン、入力検証、保存先分離 |
 | `rotate_app_logs.sh` | 古いアプリログを圧縮・削除 | あり | 既定はドライラン、対象拡張子・経過日数を限定 |
 | `audit_report.py` | 点検ログ・構築ログをJSON証跡へ変換 | JSON作成 | 入力形式を全行検証、原子的に出力 |
+| `exercises/labctl.sh` | Bash演習21問の出題・採点・進捗記録 | 学習者の作業場のみ | root不要、使い捨てサンドボックス、答案は複製して実行 |
 
 ### PowerShell演習パックのスクリプト
 
@@ -103,6 +104,7 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 
 ## 学習ルート
 
+0. [Bash演習案件パック](exercises/README.md)で手を動かす（[案内](docs/15-exercise-pack-guide.md) / [暗記チートシート](docs/17-memory-cheatsheet.md)）
 1. [案件概要](docs/00-project-overview.md)で依頼と完成条件をつかむ
 2. [要件定義](docs/01-requirements.md)で「何を作るか」を読む
 3. [基本設計](docs/02-design.md)で処理の流れと安全策を理解する
@@ -118,14 +120,15 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 13. [構築ハンズオン](docs/13-build-hands-on.md)で検証環境に実際にNginxを構築する
 14. [構築テスト仕様](docs/14-build-test-plan.md)で構築の完成条件を確認する
 15. [サーバー構築ポートフォリオへの発展計画](docs/10-server-build-roadmap.md)で不足範囲と次の成果物を確認する
-16. [PowerShell演習案件概要](docs/20-powershell-project-overview.md)でWindows側の依頼をつかむ
-17. [PowerShell演習の要件定義](docs/21-powershell-requirements.md)で作るものを読む
-18. [PowerShell演習の基本設計](docs/22-powershell-design.md)でBash版との対応関係を理解する
-19. [PowerShell演習の検証環境の構築](docs/23-powershell-setup.md)で自分の環境でどこまでできるか決める
-20. [PowerShellハンズオン](docs/24-powershell-hands-on.md)で11の演習を手を動かして進める
-21. [PowerShell演習のテスト仕様](docs/25-powershell-test-plan.md)で自動テストとNOT RUNを確認する
-22. [PowerShell運用・障害対応手順](docs/26-powershell-operations-runbook.md)でWindowsの切り分けを練習する
-23. [PowerShell用語集・チートシート](docs/27-powershell-glossary-cheatsheet.md)で合言葉6つと対応表を暗記する
+16. [Bash演習パックの採点設計](docs/16-exercise-grading-design.md)で、採点をどう機械化したかを読む
+17. [PowerShell演習案件概要](docs/20-powershell-project-overview.md)でWindows側の依頼をつかむ
+18. [PowerShell演習の要件定義](docs/21-powershell-requirements.md)で作るものを読む
+19. [PowerShell演習の基本設計](docs/22-powershell-design.md)でBash版との対応関係を理解する
+20. [PowerShell演習の検証環境の構築](docs/23-powershell-setup.md)で自分の環境でどこまでできるか決める
+21. [PowerShellハンズオン](docs/24-powershell-hands-on.md)で11の演習を手を動かして進める
+22. [PowerShell演習のテスト仕様](docs/25-powershell-test-plan.md)で自動テストとNOT RUNを確認する
+23. [PowerShell運用・障害対応手順](docs/26-powershell-operations-runbook.md)でWindowsの切り分けを練習する
+24. [PowerShell用語集・チートシート](docs/27-powershell-glossary-cheatsheet.md)で合言葉6つと対応表を暗記する
 
 ## ディレクトリ構成
 
@@ -134,6 +137,7 @@ config/               設定例（本番値や秘密情報は置かない）
 config/powershell/    PowerShell用の設定例（.psd1）
 docs/                 要件、設計、構築、テスト、運用、証跡
 examples/             実行結果の読み方
+exercises/            Bash演習21問と採点ツール（root不要）
 scripts/              Bash・Pythonの実装
 scripts/lib/          Bashの共通関数
 scripts/powershell/   PowerShellの実装
@@ -153,6 +157,7 @@ Makefile              検証コマンドの入口
 - **検証可能性:** 成功・警告・入力エラーを終了コードで区別し自動テスト。CIはLinuxとWindowsの両方で実行
 - **移植性:** 同じ設計をBashとPowerShellの両方で実装し、ログ書式を統一して証跡化スクリプトを共有
 - **説明責任:** 実行日時、コマンド、期待値、結果を証跡テンプレートに記録
+- **育成可能性:** 演習21問を自動採点し、「模範解答で合格・誤答で不合格」をCIで毎回検証
 
 ## 現在の検証範囲
 

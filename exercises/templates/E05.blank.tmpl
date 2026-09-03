@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+# __1__ から __4__ の4か所を埋めます。それ以外の行は変えません。
+# 詰まったら: bash exercises/labctl.sh hint @LAB_ID@
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+usage() {
+  printf '%s\n' 'Usage: argparse.sh --config FILE [--execute]' '既定はドライランです。'
+}
+
+config_path=''
+execute=false
+while (($#)); do
+  case "$1" in
+    # __1__ : --config は値が必須です。値が無ければ die、あれば $2 を受けて2つ進みます。
+    --config) __1__ ;;
+    # __2__ : --execute は値を取りません。true にして1つ進みます。
+    --execute) __2__ ;;
+    # __3__ : -h と --help は usage を出して終了0です。
+    -h|--help) __3__ ;;
+    # __4__ : ここに「それ以外すべて」を表す case のパターンを書きます。
+    __4__) die "不明な引数です: $1" ;;
+  esac
+done
+
+[[ -n $config_path ]] || die '--config は必須です'
+printf 'config=%s execute=%s\n' "$config_path" "$execute"

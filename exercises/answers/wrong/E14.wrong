@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# 誤答例: 3ケースとも「通る」ことしか見ていないため、壊れた実装でも落ちません。
+set -Eeuo pipefail
+
+target=${TARGET_SCRIPT:-$HOME/bash-lab/L3/copyjob.sh}
+
+tmp_dir=$(mktemp -d)
+trap 'rm -rf -- "$tmp_dir"' EXIT
+pass=0
+fail=0
+ok() { printf 'ok - %s\n' "$1"; pass=$((pass + 1)); }
+not_ok() { printf 'not ok - %s\n' "$1"; fail=$((fail + 1)); }
+
+assert_status() {
+  local name=$1 expected=$2
+  shift 2
+  local actual=0
+  "$@" >"$tmp_dir/output" 2>&1 || actual=$?
+  if [[ $actual == "$expected" ]]; then ok "$name"; else not_ok "$name (expected=$expected actual=$actual)"; fi
+}
+
+assert_contains() {
+  local name=$1 needle=$2
+  if grep -Fq -- "$needle" "$tmp_dir/output"; then ok "$name"; else not_ok "$name"; fi
+}
+
+mkdir -p "$tmp_dir/src"
+printf 'data\n' >"$tmp_dir/src/data.txt"
+
+# ここが誤りです。ドライランの終了コードしか見ておらず、
+# 成果物ができていないことを確かめていません。
+assert_status 'dry-run succeeds' 0 bash "$target" --src "$tmp_dir/src" --dst "$tmp_dir/dst"
+
+assert_status 'execute succeeds' 0 bash "$target" --src "$tmp_dir/src" --dst "$tmp_dir/dst" --execute
+if [[ -s "$tmp_dir/dst/data.txt" ]]; then ok 'execute copies the file'; else not_ok 'execute copies the file'; fi
+
+assert_status 'unknown option is rejected' 2 bash "$target" --src "$tmp_dir/src" --dst "$tmp_dir/dst" --nosuch
+assert_contains 'unknown option explains cause' '不明な引数です'
+
+printf '1..%d\n' "$((pass + fail))"
+printf '# pass=%d fail=%d\n' "$pass" "$fail"
+(( fail == 0 ))
