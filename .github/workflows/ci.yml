@@ -22,7 +22,7 @@ jobs:
 
   powershell-quality:
     # PowerShell演習案件パックは、Linux(CI用)とWindows(本来の対象)の両方で確認します。
-    # Windows専用の確認項目はテスト側で対象外にするため、Windowsでは2件少ない件数で通ります。
+    # Windows専用の確認はテスト側で対象外にし、OSごとに確認する内容も変えるため、合格件数はOSで異なります。
     strategy:
       fail-fast: false
       matrix:

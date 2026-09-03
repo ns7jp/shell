@@ -49,7 +49,7 @@
 | GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、コミット`307c406`で構文チェック・自動テスト・PSScriptAnalyzerすべて成功。初回コミット`146a1b2`では`PSUseSingularNouns`を1件指摘され失敗 |
 | GitHub ActionsのPowerShellジョブ（windows-latest） | PASS | 2026-09-03、コミット`307c406`で `1..58 / pass=58 fail=0`、PSScriptAnalyzerも `PSScriptAnalyzer OK`。初回コミット`146a1b2`では `pass=54 fail=2`（PS-16がWindowsでのみ失敗） |
 | PSScriptAnalyzer（CI上） | PASS | 2026-09-03、ubuntu-latest・windows-latestの両方で指摘0件。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
-| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Microsoft Windows Server 2025 / 10.0.26100 Datacenter、イメージ `windows-2025-vs2026`。ジョブログの「Operating System」で確認）、コミット`307c406`で58/58成功。PS-07とPS-25はWindowsでは対象外としてスキップされるため、同コミットのLinux（60件）より2件少ない |
+| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Microsoft Windows Server 2025 / 10.0.26100 Datacenter、イメージ `windows-2025-vs2026`。ジョブログの「Operating System」で確認）。コミット`b28d3c4`で63/63成功（同コミットのLinuxは66件。差はOSごとに対象外・確認内容が変わるため） |
 
 ## ローカル検証記録
 
@@ -259,7 +259,19 @@ Windows実機を持っていなくても、CIのwindows-latestジョブがあれ
 
 **Linuxだけで検証していたら、どちらも見逃していました。** 「両方のOSでCIを回す」ことの効果が実際に出た例です。
 
-修正後のCI結果（コミット `307c406`）は次のとおりです。
+現在のCI結果（コミット `b28d3c4`）は次のとおりです。
+
+```text
+shell-quality (ubuntu-latest)              success
+powershell-quality (ubuntu-latest)         success   自動テスト 66/66、PSScriptAnalyzer 指摘0件
+powershell-quality (windows-latest)        success   自動テスト 63/63（1..63 / pass=63 fail=0）、PSScriptAnalyzer 指摘0件
+```
+
+Windowsが3件少ないのは、PS-07とPS-25が対象外になること（各1行に集約）に加えて、
+PS-03が「同じ場所を指す別の書き方」をOSごとに変えて試す（Linuxは4通り、Windowsは3通り）ためです。
+**件数が環境で違うこと自体を説明できる状態**にしてあり、合格条件は件数ではなく `fail=0` です。
+
+参考までに、修正前のコミット `307c406` の結果は次のとおりでした。
 
 ```text
 shell-quality (ubuntu-latest)              success
