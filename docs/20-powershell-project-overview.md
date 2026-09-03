@@ -48,8 +48,10 @@ Linux側の仕組みが動き始めた会社から、続けて次の相談を受
 1. 初心者がREADMEから、何も壊さずにドライラン（変更せず予定だけ表示すること）を体験できる。
 
    ```powershell
-   pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath config/powershell/websetup.psd1.example
+   pwsh -NoProfile -File scripts\powershell\Install-WebServer.ps1 -ConfigPath config\powershell\websetup.psd1.example
    ```
+
+   設定例は `.psd1.example` のままコピーせずに指定できます。ただしWindows以外では、設定例のパス（`C:\inetpub\wwwroot`）がそのOSの絶対パスではないため終了コード2で拒否されます。パスを自分のホーム配下へ書き換えれば、Windows以外でもドライランを確認できます（[23章](23-powershell-setup.md)）。
 
 2. `-Execute` を付けない限り、1バイトも変更しない。付けた場合も、Windows以外の環境と管理者権限が無い場合は実行前に拒否する。
 

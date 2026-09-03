@@ -195,7 +195,7 @@ WARNとして数えた（本当はfalseなのに！）
 
 覚え方: **「Write-Output は表示ではなく、受け渡し」**。
 
-## 演習8: ドライランで構築を予習する（全環境で実行可）
+## 演習8: ドライランで構築を予習する（設定のパスを直せば全環境で実行可）
 
 ```powershell
 pwsh -NoProfile -File .\scripts\powershell\Install-WebServer.ps1 -ConfigPath .\config\powershell\websetup.psd1.example
@@ -203,9 +203,22 @@ Write-Output "終了コード=$LASTEXITCODE"
 Test-Path C:\inetpub\wwwroot\index.html   # False のはず
 ```
 
-`[DRY-RUN]` で始まる行が、**これから実行される予定のコマンド**です。パスとポートが意図どおりかを声に出して読んでから、次へ進みます。
+`[DRY-RUN]` で始まる行が、**これから実行される予定のコマンド**です。パスとポートが意図どおりかを声に出して読んでから、次へ進みます。設定例は `.psd1.example` のまま指定できます（コピーは不要です）。
 
-Windows以外で実行すると、役割・ファイアウォール・サービスの3項目が「Windows以外の環境です」というWARNになり、終了コードは `1` になります。これは不具合ではなく、確認できなかった事実の記録です。
+**Windows以外で実行する場合**は、設定例の `WebRoot = 'C:\inetpub\wwwroot'` がそのOSの絶対パスではないため、演習1と同じ理由で終了コード `2` になります。次のようにパスを書き換えたファイルを用意してください。
+
+```bash
+sed 's|C:\\inetpub\\wwwroot|'"$HOME"'/ps-lab/wwwroot|' config/powershell/websetup.psd1.example > "$HOME/ps-lab/websetup.psd1"
+pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath "$HOME/ps-lab/websetup.psd1"
+```
+
+書き換えたうえでWindows以外で実行すると、役割・ファイアウォール・サービスの3項目が「Windows以外の環境です」というWARNになり、終了コードは `1` になります。これは不具合ではなく、確認できなかった事実の記録です。
+
+```text
+[WARN] 役割を導入するコマンドが見つからないため、IISの導入をスキップしました(Windows以外の環境です)
+[WARN] New-NetFirewallRule が見つからないためファイアウォール設定をスキップしました(Windows以外の環境です。手動確認が必要)
+[WARN] Get-Service が見つからないためサービスの自動起動設定をスキップしました(Windows以外の環境です)
+```
 
 ## 演習9: 実際に構築する（Windowsのみ・使い捨て環境で）
 

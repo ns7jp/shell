@@ -34,17 +34,19 @@ pwsh -NoProfile -File tests/powershell/Run-PowerShellTests.ps1
 ```text
 ok - PS-01 全スクリプトに構文エラーがない
 ...
-1..60
-# pass=60 fail=0
+1..62
+# pass=62 fail=0
 ```
 
 **件数は環境によって変わります。** Windowsでは PS-07（ファイル権限の確認）と PS-25（Windows以外での `-Execute` 拒否）が対象外になり、スキップした旨を1行で記録するため合計58件になります。件数が減るのは不具合ではなく、「この環境では対象外」と正直に記録した結果です。実測値は次のとおりです。
 
-| 実行環境 | 結果 |
+| 実行環境 | 件数 |
 |---|---|
-| Linux（PowerShell 7.4.6） | `1..60` / `pass=60 fail=0` |
-| GitHub Actions ubuntu-latest | `1..60` / `pass=60 fail=0` |
-| GitHub Actions windows-latest | `1..58` / `pass=58 fail=0` |
+| Linux（PowerShell 7.4.6） | 全件（実測: `1..62` / `pass=62 fail=0`） |
+| GitHub Actions ubuntu-latest | Linuxと同じ |
+| GitHub Actions windows-latest | PS-07とPS-25が対象外になるため**2件少ない** |
+
+各コミットでの実測値は[検証証跡](08-evidence.md)に記録します。テストを追加すれば件数は増えるので、**数字そのものではなく「失敗0件」を合格条件**にしてください。
 
 ## 自動テストケース
 
@@ -63,6 +65,7 @@ ok - PS-01 全スクリプトに構文エラーがない
 | PS-09 | `Write-OpsLog` | 関数の中でログを出して真偽値を返す | 戻り値が汚れない（回帰テスト） | 自動 |
 | PS-29 | `Write-OpsLog` | 改行とタブを含むメッセージ | 1行にまとめられ、書式が保たれる | 自動 |
 | PS-30 | `Assert-OpsSafePath` | 区切り文字が混在し、末尾に区切りが付いたパス | OSの形にそろえて返す（Windowsは `\`、それ以外は `/`） | 自動 |
+| PS-31 | `Import-OpsConfig` | `*.psd1.example` をそのまま指定 | コピーせずに読み込める（READMEの手順が動く） | 自動 |
 | PS-10 | 点検 | 正常な設定 | 終了0または1、開始ログを含む | 自動 |
 | PS-11 | 点検 | `CpuWarnPercent = 101` | 終了2、範囲を説明 | 自動 |
 | PS-12 | 点検 | `LogDirectory` 未設定 | 終了2、「LogDirectory は必須です」 | 自動 |
@@ -93,11 +96,11 @@ PS-30は、CIのWindowsジョブで実際に見つかった不具合の回帰テ
 
 | ID | 対象 | 条件 | 期待結果 | 種別 |
 |---|---|---|---|---|
-| PS-31 | 構築 | 同じ設定で2回続けて `-Execute` | 2回目に「導入済み」「登録済み」と表示され、余計な変更が出ない（冪等性） | 手動 |
-| PS-32 | バックアップ | 作成したZIPを別フォルダーへ展開し、`Get-FileHash` で比較 | `Compare-Object` に差分が出ない | 手動 |
-| PS-33 | 点検 | しきい値を現在値より低くする | 該当項目がWARNになり終了1 | 手動 |
-| PS-34 | 全スクリプト | Windows PowerShell 5.1（`powershell`）で実行 | `#requires` により処理を始める前に停止する | 手動 |
-| PS-35 | 受け入れ試験 | 構築済みサーバーに対して既存のBash側点検を実行 | ログ書式が同じで、同じ `audit_report.py` で証跡化できる | 手動 |
+| PS-32 | 構築 | 同じ設定で2回続けて `-Execute` | 2回目に「導入済み」「登録済み」と表示され、余計な変更が出ない（冪等性） | 手動 |
+| PS-33 | バックアップ | 作成したZIPを別フォルダーへ展開し、`Get-FileHash` で比較 | `Compare-Object` に差分が出ない | 手動 |
+| PS-34 | 点検 | しきい値を現在値より低くする | 該当項目がWARNになり終了1 | 手動 |
+| PS-35 | 全スクリプト | Windows PowerShell 5.1（`powershell`）で実行 | `#requires` により処理を始める前に停止する | 手動 |
+| PS-36 | 受け入れ試験 | 構築済みサーバーに対して既存のBash側点検を実行 | ログ書式が同じで、同じ `audit_report.py` で証跡化できる | 手動 |
 
 ## NOT RUN（未実施）
 

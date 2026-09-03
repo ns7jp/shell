@@ -31,7 +31,7 @@
 | 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 |
 | Ansible等による構成管理の再現性 | NOT RUN | [構築ロードマップ](10-server-build-roadmap.md)のPhase 2相当、未着手 |
 | PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象6ファイル、`make ps-syntax` 終了0 |
-| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 60/60成功、終了0、追加モジュール不要 |
+| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 62/62成功、終了0、追加モジュール不要 |
 | PowerShell点検スクリプトの実行 | PASS | 2026-09-03、Linux上で `Invoke-ServerAudit.ps1` 実行、Windows専用コマンド不在の2項目をWARN、終了1 |
 | PowerShellログのJSON証跡化 | PASS | 2026-09-03、既存の `audit_report.py` を無改修で再利用、`result=WARN`、終了1 |
 | PowerShell構築スクリプトのドライラン | PASS | 2026-09-03、`Install-WebServer.ps1`（`-Execute` なし）でファイル未作成を確認、終了1（環境依存の警告3件） |
@@ -48,7 +48,7 @@
 | GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、コミット`307c406`で構文チェック・自動テスト・PSScriptAnalyzerすべて成功。初回コミット`146a1b2`では`PSUseSingularNouns`を1件指摘され失敗 |
 | GitHub ActionsのPowerShellジョブ（windows-latest） | PASS | 2026-09-03、コミット`307c406`で `1..58 / pass=58 fail=0`、PSScriptAnalyzerも `PSScriptAnalyzer OK`。初回コミット`146a1b2`では `pass=54 fail=2`（PS-16がWindowsでのみ失敗） |
 | PSScriptAnalyzer（CI上） | PASS | 2026-09-03、ubuntu-latest・windows-latestの両方で指摘0件。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
-| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Windows Server 2022相当）で58/58成功。PS-07とPS-25はWindowsでは対象外としてスキップされるため、Linuxの60件より2件少ない |
+| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Windows Server 2022相当）、コミット`307c406`で58/58成功。PS-07とPS-25はWindowsでは対象外としてスキップされるため、同コミットのLinux（60件）より2件少ない |
 
 ## ローカル検証記録
 
@@ -154,7 +154,7 @@ evidence: scripts/powershell と tests/powershell の6ファイルすべてで�
 command: pwsh -NoProfile -File tests/powershell/Run-PowerShellTests.ps1
 exit code: 0
 result: PASS
-evidence: pass=60 fail=0。追加モジュール（Pester等）のインストールなしで完走。
+evidence: pass=62 fail=0。追加モジュール（Pester等）のインストールなしで完走。
   Windows専用の確認を含むPS-07・PS-25は、この環境では実行対象（Linux側）として通過。
 
 command: pwsh -NoProfile -File scripts/powershell/Invoke-ServerAudit.ps1 --ConfigPath ... --OutputPath audit.log
@@ -240,6 +240,10 @@ powershell-quality (windows-latest)        success   自動テスト 58/58（1..
 Windowsの件数が2件少ないのは、PS-07（ファイル権限の確認）とPS-25（Windows以外での `-Execute` 拒否）が
 Windowsでは対象外となり、スキップした旨を1行で記録するためです。件数が環境で変わること自体を
 「対象外と記録した結果」として説明できる状態にしてあります。
+
+**上の件数はコミット `307c406` 時点の実測値です。** その後テストを追加したため件数は増えています
+（PS-30・PS-31の追加により、Linuxで62件）。件数はテストを足せば変わるので、
+合格条件は件数ではなく `fail=0` です。
 
 **この結果はCIランナー（Windows Server 2022相当）でのものであり、IISを実際に構築したわけではありません。**
 役割の導入・サービスの自動起動・ファイアウォール規則の作成と到達性は、上の台帳のとおり `NOT RUN` のままです。

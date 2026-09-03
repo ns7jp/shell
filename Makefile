@@ -32,6 +32,6 @@ ps-test: ps-syntax
 
 ps-lint:
 	@command -v pwsh >/dev/null || { echo 'pwsh (PowerShell 7以上) が必要です'; exit 2; }
-	@pwsh -NoProfile -Command 'if (-not (Get-Module PSScriptAnalyzer -ListAvailable)) { Write-Output "PSScriptAnalyzer が必要です: Install-Module PSScriptAnalyzer -Scope CurrentUser"; exit 2 }; $$found = Invoke-ScriptAnalyzer -Path scripts/powershell -Recurse -Severity Error,Warning; $$found += Invoke-ScriptAnalyzer -Path tests/powershell -Recurse -Severity Error,Warning; if ($$found) { $$found | Format-Table -AutoSize | Out-String | Write-Output; exit 2 }; Write-Output "PSScriptAnalyzer の指摘なし"'
+	@pwsh -NoProfile -Command 'if (-not (Get-Module PSScriptAnalyzer -ListAvailable)) { Write-Output "PSScriptAnalyzer が必要です: Install-Module PSScriptAnalyzer -Scope CurrentUser"; exit 2 }; $$found = Invoke-ScriptAnalyzer -Path scripts/powershell -Recurse -Settings ./PSScriptAnalyzerSettings.psd1; $$found += Invoke-ScriptAnalyzer -Path tests/powershell -Recurse -Settings ./PSScriptAnalyzerSettings.psd1; if ($$found) { $$found | Format-Table -AutoSize | Out-String | Write-Output; exit 2 }; Write-Output "PSScriptAnalyzer の指摘なし"'
 
 check-all: check ps-test

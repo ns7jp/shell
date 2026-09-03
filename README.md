@@ -68,14 +68,28 @@ make test
 
 ### PowerShell演習パックを試す
 
-対象: PowerShell 7.0以上（`pwsh`）。Windowsが無くても、ドライランと自動テストは実行できます。
+対象: PowerShell 7.0以上（`pwsh`）。自動テストはどのOSでも実行できます。
 
 ```bash
 make ps-test    # 構文チェックと自動テスト（追加モジュールのインストールは不要）
-pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath config/powershell/websetup.psd1.example
 ```
 
-`-Execute` を付けていないため何も変更しません。実際にIISを構築する手順は、使い捨ての検証環境を用意したうえで[PowerShellハンズオン](docs/24-powershell-hands-on.md)に従ってください。
+Windowsでは、設定例をそのまま指定してドライラン（変更せず予定だけ表示）を確認できます。
+
+```powershell
+pwsh -NoProfile -File scripts\powershell\Install-WebServer.ps1 -ConfigPath config\powershell\websetup.psd1.example
+```
+
+`-Execute` を付けていないため何も変更しません。
+
+**Windows以外で試す場合**は、設定例のパス（`C:\inetpub\wwwroot` など）がそのOSの絶対パスではないため、終了コード2で拒否されます。これは不具合ではなく、実在しない場所を黙って受け入れない設計です。次のようにパスを書き換えてから実行してください。
+
+```bash
+sed 's|C:\\inetpub\\wwwroot|'"$HOME"'/ps-lab/wwwroot|' config/powershell/websetup.psd1.example > "$HOME/websetup.psd1"
+pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath "$HOME/websetup.psd1"
+```
+
+実際にIISを構築する手順は、使い捨ての検証環境を用意したうえで[PowerShellハンズオン](docs/24-powershell-hands-on.md)に従ってください。
 
 点検ログを機械可読な証跡にする一連の流れは次のとおりです（出力先は自分が書き込める絶対パスに変更します）。
 

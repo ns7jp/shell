@@ -156,7 +156,7 @@ if (Test-OpsCommand -Name 'New-NetFirewallRule') {
     }
 }
 else {
-    Write-OpsLog -Level WARN -Message 'New-NetFirewallRule が見つからないためファイアウォール設定をスキップしました(手動確認が必要)'
+    Write-OpsLog -Level WARN -Message 'New-NetFirewallRule が見つからないためファイアウォール設定をスキップしました(Windows以外の環境です。手動確認が必要)'
     $warnings++
 }
 

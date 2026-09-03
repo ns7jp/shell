@@ -224,6 +224,18 @@ Write-Output (Assert-OpsSafePath -Name 'TargetPath' -Path '$mixedPath')
     Assert-True -Name 'PS-30 パス区切りと末尾がOSの形にそろえられる' `
         -Condition ($script:LastOutput.Trim() -eq $expectedPath) -Detail "actual=$($script:LastOutput.Trim()) expected=$expectedPath"
 
+    # README や各章が案内する config/powershell/*.psd1.example を、
+    # コピーせずそのまま -ConfigPath に渡せることを確認します。
+    $exampleConfig = Join-Path $temporaryRoot 'sample.psd1.example'
+    New-TestConfig -Path $exampleConfig -Body "@{ CpuWarnPercent = 80 }" | Out-Null
+    New-TestConfig -Path $moduleProbe -Body @"
+Import-Module '$modulePath' -Force
+`$config = Import-OpsConfig -Path '$exampleConfig'
+Write-Output ("CpuWarnPercent=" + `$config.CpuWarnPercent)
+"@ | Out-Null
+    Assert-ExitCode -Name 'PS-31 .psd1.example をそのまま読み込める' -Expected 0 -Path $moduleProbe
+    Assert-OutputContainsText -Name 'PS-31 読み込んだ値を取り出せる' -Needle 'CpuWarnPercent=80'
+
     ## PS-10..PS-12 点検 ---------------------------------------------------
     $auditScript = Join-Path $scriptDirectory 'Invoke-ServerAudit.ps1'
     $auditConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'audit.psd1') -Body @"

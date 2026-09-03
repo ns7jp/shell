@@ -179,7 +179,10 @@ function Import-OpsConfig {
     }
 
     $item = Get-Item -LiteralPath $Path
-    if ($item.Extension -ne '.psd1') {
+    # config/powershell/*.psd1.example をコピーせずそのまま試せるよう、
+    # 「.psd1 で終わる」か「.psd1.example で終わる」名前を受け付けます。
+    # 中身はどちらも Import-PowerShellDataFile が読めるデータ形式です。
+    if ($item.Name -notmatch '\.psd1(\.example)?$') {
         Stop-OpsScript -Message "設定ファイルは .psd1 形式にしてください: $Path"
     }
 
