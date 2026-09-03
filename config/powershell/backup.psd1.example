@@ -1,0 +1,16 @@
+# New-DataBackup.ps1 の設定例です。
+# 学習時は、自分が読み書きできる練習用ディレクトリに必ず書き換えてください。
+@{
+    # 保存元。ここを丸ごとZIPにします。
+    SourceDirectory = 'C:\ops-lab\source'
+
+    # 保存先。SourceDirectory の中には置けません(バックアップが自分自身を取り込むため)。
+    BackupDirectory = 'C:\ops-lab\backups'
+
+    # 何日ぶんの世代を残すか。これより古い世代は削除対象になります。
+    RetentionDays   = 7
+
+    # アーカイブ名の先頭に付ける文字列。英数字・ハイフン・アンダースコアだけ使えます。
+    # 実際のファイル名は example-app_20260101-090000.zip のようになります。
+    ArchivePrefix   = 'example-app'
+}

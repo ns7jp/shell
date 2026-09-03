@@ -8,6 +8,9 @@ config/*.conf
 !config/*.conf.example
 audit.log
 audit.json
+config/powershell/*.psd1
+!config/powershell/*.psd1.example
+*.zip
 
 # 演習パックの作業場（誤ってリポジトリ内で作業した場合の保険）
 bash-lab/
