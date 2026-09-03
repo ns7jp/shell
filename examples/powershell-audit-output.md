@@ -18,7 +18,7 @@
 2026-01-01T09:00:02+0900 [WARN] 点検完了: 警告 1 件
 ```
 
-これは説明用の架空例であり、実サーバーの実行証跡ではありません。上の行のうち、Windows実機でしか得られない値（`Get-CimInstance` によるCPU・メモリ、`Get-Service`、`Get-WinEvent`）は、[検証証跡](../docs/08-evidence.md)で `NOT RUN` として扱っています。
+これは説明用の架空例であり、実サーバーの実行証跡ではありません。上の行のうち、Windows実機でしか得られない値（`Get-CimInstance` によるCPU・メモリ、`Get-Service`、`Get-WinEvent`）は、Windows実機では未実施です（[検証証跡](../docs/08-evidence.md)および[25. テスト仕様](../docs/25-powershell-test-plan.md)のPS-46で `NOT RUN` として管理しています）。
 
 `INFO` は情報、`OK` は基準内、`WARN` は確認が必要、`ERROR` は処理継続不能を表します。
 

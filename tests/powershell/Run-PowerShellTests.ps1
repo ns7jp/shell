@@ -135,6 +135,17 @@ Assert-OpsSafePath -Name 'TargetPath' -Path '$dangerousPath'
     Assert-ExitCode -Name 'PS-03 重要なシステムディレクトリを終了コード2で拒否する' -Expected 2 -Path $moduleProbe
     Assert-OutputContainsText -Name 'PS-03 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
 
+    # 同じ場所を指す別の書き方でもすり抜けないことを確認します。
+    # 正規化を忘れると '//etc' や '/./etc' が素通りし、安全機構が無効になります。
+    $sneakyPaths = if ($IsWindows) { @('C:\\Windows', 'C:\Windows\', 'C:/Windows') } else { @('//etc', '/./etc', '///etc', '/etc/') }
+    foreach ($sneaky in $sneakyPaths) {
+        New-TestConfig -Path $moduleProbe -Body @"
+Import-Module '$modulePath' -Force
+Assert-OpsSafePath -Name 'TargetPath' -Path '$sneaky'
+"@ | Out-Null
+        Assert-ExitCode -Name "PS-03 別の書き方でもすり抜けない: $sneaky" -Expected 2 -Path $moduleProbe
+    }
+
     New-TestConfig -Path $moduleProbe -Body @"
 Import-Module '$modulePath' -Force
 Assert-OpsIntegerRange -Name 'CpuWarnPercent' -Value 101 -Minimum 1 -Maximum 100

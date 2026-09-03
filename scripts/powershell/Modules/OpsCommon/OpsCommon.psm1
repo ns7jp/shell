@@ -315,13 +315,17 @@ function Assert-OpsSafePath {
         Stop-OpsScript -Message "$Name に .. は使用できません: $Path"
     }
 
-    # 区切り文字をそのOSの形にそろえてから判定します。
-    # Windowsは \ と / のどちらも区切りとして通ってしまうため、そろえずに文字列比較すると
-    # 'C:\data\source/inner' が 'C:\data\source\' で始まらない扱いになり、
-    # 「保存先が保存元の中にある」といった検査をすり抜けます（CIのWindowsジョブで実際に発生）。
-    $normalized = $Path
-    if ($IsWindows) {
-        $normalized = $normalized.Replace('/', '\')
+    # 判定の前に、パスの書き方を1つの形へそろえます（正規化）。
+    # そろえずに文字列を比べると、同じ場所を指す別の書き方で検査をすり抜けます。
+    #   ・'C:\data\source/inner' は 'C:\data\source\' で始まらない扱いになる（Windowsは \ と / の両方が区切り）
+    #   ・'//tmp'、'/./tmp'、'///tmp' は '/tmp' と一致しない扱いになる
+    # 前者はCIのWindowsジョブが、後者はコードレビューが実際に見つけました。
+    # .NET の GetFullPath はこれらをまとめて1つの形に直します（ファイルの存在は見ません）。
+    try {
+        $normalized = [System.IO.Path]::GetFullPath($Path)
+    }
+    catch {
+        Stop-OpsScript -Message "$Name をパスとして解釈できません: $Path"
     }
     $normalized = $normalized.TrimEnd('\', '/')
     if ($normalized -eq '') {

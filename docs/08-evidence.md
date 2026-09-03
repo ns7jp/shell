@@ -30,8 +30,9 @@
 | 実Ubuntu VMでの構築・再起動後のsystemd自動起動 | NOT RUN | コンテナにはsystemdがなく確認不能。実VMでの確認が必要 |
 | 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 |
 | Ansible等による構成管理の再現性 | NOT RUN | [構築ロードマップ](10-server-build-roadmap.md)のPhase 2相当、未着手 |
-| PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象6ファイル、`make ps-syntax` 終了0 |
-| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 62/62成功、終了0、追加モジュール不要 |
+| Windows実機での点検値の取得（CPU・メモリ・サービス・イベントログ） | NOT RUN | `Get-CimInstance` / `Get-Service` / `Get-WinEvent` はLinuxに存在せず、CIのWindowsジョブでも実サーバーへの点検を回していない（[25. テスト仕様](25-powershell-test-plan.md)のPS-46） |
+| PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象7ファイル（実装6 + テスト1）、`make ps-syntax` 終了0 |
+| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 66/66成功、終了0、追加モジュール不要 |
 | PowerShell点検スクリプトの実行 | PASS | 2026-09-03、Linux上で `Invoke-ServerAudit.ps1` 実行、Windows専用コマンド不在の2項目をWARN、終了1 |
 | PowerShellログのJSON証跡化 | PASS | 2026-09-03、既存の `audit_report.py` を無改修で再利用、`result=WARN`、終了1 |
 | PowerShell構築スクリプトのドライラン | PASS | 2026-09-03、`Install-WebServer.ps1`（`-Execute` なし）でファイル未作成を確認、終了1（環境依存の警告3件） |
@@ -39,7 +40,7 @@
 | PowerShellバックアップの作成と整合性確認 | PASS | 2026-09-03、`New-DataBackup.ps1 -Execute` でZIP作成、開いて1件を確認、終了0 |
 | PowerShellログ保守 | PASS | 2026-09-03、`Invoke-LogMaintenance.ps1 -Execute` で圧縮後に元ログ0バイト、終了0 |
 | PowerShell設定検証（フェイルクローズ） | PASS | 2026-09-03、危険パス・範囲外の値・必須欠落・処理入り`.psd1`をすべて終了2で拒否 |
-| PSScriptAnalyzer（PowerShell静的解析） | NOT RUN（ローカル） | 2026-09-03、検証環境からPowerShell Galleryへ到達できずインストール不可。CIの `powershell-quality` ジョブで実行する設定を追加済みだが、結果は未確認 |
+| PSScriptAnalyzer（PowerShell静的解析・ローカル） | NOT RUN | 2026-09-03、検証環境からPowerShell Galleryへ到達できずインストール不可。**CIでは実行済み**（下の「PSScriptAnalyzer（CI上）」行を参照）。NOT RUN はローカル環境に限った話 |
 | Windows実機でのIIS構築（`Install-WebServer.ps1 -Execute`） | NOT RUN | Windows実機が必要。役割導入・サービス自動起動・ファイアウォール規則は未確認 |
 | Windows実機での受け入れ試験（全項目OK） | NOT RUN | 構築が未実施のため。Linuxでは5項目すべてWARNになることのみ確認済み |
 | Windows再起動後のサービス自動起動 | NOT RUN | 再起動をまたぐ確認は実機VMが必要 |
@@ -48,7 +49,7 @@
 | GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、コミット`307c406`で構文チェック・自動テスト・PSScriptAnalyzerすべて成功。初回コミット`146a1b2`では`PSUseSingularNouns`を1件指摘され失敗 |
 | GitHub ActionsのPowerShellジョブ（windows-latest） | PASS | 2026-09-03、コミット`307c406`で `1..58 / pass=58 fail=0`、PSScriptAnalyzerも `PSScriptAnalyzer OK`。初回コミット`146a1b2`では `pass=54 fail=2`（PS-16がWindowsでのみ失敗） |
 | PSScriptAnalyzer（CI上） | PASS | 2026-09-03、ubuntu-latest・windows-latestの両方で指摘0件。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
-| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Windows Server 2022相当）、コミット`307c406`で58/58成功。PS-07とPS-25はWindowsでは対象外としてスキップされるため、同コミットのLinux（60件）より2件少ない |
+| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Microsoft Windows Server 2025 / 10.0.26100 Datacenter、イメージ `windows-2025-vs2026`。ジョブログの「Operating System」で確認）、コミット`307c406`で58/58成功。PS-07とPS-25はWindowsでは対象外としてスキップされるため、同コミットのLinux（60件）より2件少ない |
 
 ## ローカル検証記録
 
@@ -148,13 +149,13 @@ commit: 作業ツリー（未コミット）
 command: make ps-syntax
 exit code: 0
 result: PASS
-evidence: scripts/powershell と tests/powershell の6ファイルすべてで構文エラーなし
+evidence: scripts/powershell と tests/powershell の7ファイル（実装6 + テスト1）すべてで構文エラーなし
   （PowerShellのパーサー [System.Management.Automation.Language.Parser]::ParseFile で確認）
 
 command: pwsh -NoProfile -File tests/powershell/Run-PowerShellTests.ps1
 exit code: 0
 result: PASS
-evidence: pass=62 fail=0。追加モジュール（Pester等）のインストールなしで完走。
+evidence: pass=66 fail=0。追加モジュール（Pester等）のインストールなしで完走。
   Windows専用の確認を含むPS-07・PS-25は、この環境では実行対象（Linux側）として通過。
 
 command: pwsh -NoProfile -File scripts/powershell/Invoke-ServerAudit.ps1 --ConfigPath ... --OutputPath audit.log
@@ -201,7 +202,8 @@ command: Install-Module PSScriptAnalyzer
 exit code: -
 result: NOT RUN
 evidence: 検証環境からPowerShell Galleryへ到達できず（プロキシで拒否）。
-  CIの powershell-quality ジョブで実行する設定は追加済みだが、結果は未確認。
+  なお、CIの powershell-quality ジョブでは実行済みで、ubuntu-latest・windows-latestとも指摘0件。
+  この NOT RUN はローカル環境に限った話。
 ```
 
 この結果は**Linux上のPowerShell 7による検証**です。Windows Server実機でのIIS導入、サービスの自動起動、ファイアウォール規則の作成と到達性は確認できていません。上の台帳で `NOT RUN` と明記しています。
@@ -227,6 +229,34 @@ Windows実機を持っていなくても、CIのwindows-latestジョブがあれ
 修正: Assert-OutputContainsText に改名。規則の除外は増やしていない。
 ```
 
+### レビューで見つかった不具合（2026-09-03）
+
+成果物を4観点でレビューし、実行して再現できた指摘を修正しました。安全機構に関わるものを挙げます。
+
+```text
+症状: 保護ディレクトリの判定が、同じ場所を指す別の書き方ですり抜ける
+再現: Assert-OpsSafePath -Name T -Path '/tmp'    -> 終了2（拒否・正しい）
+      Assert-OpsSafePath -Name T -Path '//tmp'   -> 終了0（すり抜け）
+      Assert-OpsSafePath -Name T -Path '/./tmp'  -> 終了0（すり抜け）
+      Assert-OpsSafePath -Name T -Path '///tmp'  -> 終了0（すり抜け）
+      ls -di /tmp //tmp /./tmp  → いずれも同じ inode（同一ディレクトリ）
+原因: 文字列をそのまま比較していたため、書き方の違いを吸収できていなかった。
+      先にCIのWindowsジョブで見つかった「区切り文字の混在」と同じ種類の見落とし。
+影響: 「重要ディレクトリそのものは拒否する」というフェイルクローズが無効になる。
+修正: [System.IO.Path]::GetFullPath で正規化してから判定するようにした。
+      Windowsの \ と / の混在も、この1か所でまとめて吸収される。
+回帰テスト: PS-03 に別の書き方（//etc、/./etc、///etc、/etc/ ／WindowsはC:\\Windows等）を追加。
+
+症状: READMEと各章が案内する config/powershell/*.psd1.example を
+      -ConfigPath にそのまま渡すと、どのOSでも終了コード2で失敗する
+原因: 拡張子を .psd1 に限定していたため（Get-Item の Extension は .example を返す）。
+影響: 初心者が最初に打つコマンドが動かない。
+修正: .psd1 と .psd1.example の両方を受け付けるようにした。回帰テスト PS-31 を追加。
+```
+
+これらはLinuxでもWindowsでも再現する不具合で、**自動テストが全件通っている状態でも残っていました。**
+「テストが緑であること」と「安全機構が本当に働くこと」は別だ、という実例として記録します。
+
 **Linuxだけで検証していたら、どちらも見逃していました。** 「両方のOSでCIを回す」ことの効果が実際に出た例です。
 
 修正後のCI結果（コミット `307c406`）は次のとおりです。
@@ -245,5 +275,5 @@ Windowsでは対象外となり、スキップした旨を1行で記録するた
 （PS-30・PS-31の追加により、Linuxで62件）。件数はテストを足せば変わるので、
 合格条件は件数ではなく `fail=0` です。
 
-**この結果はCIランナー（Windows Server 2022相当）でのものであり、IISを実際に構築したわけではありません。**
+**このCIランナーはWindows Server 2025ですが、ジョブが実行しているのはドライランと検証ロジックまでで、IISを実際に構築したわけではありません。**
 役割の導入・サービスの自動起動・ファイアウォール規則の作成と到達性は、上の台帳のとおり `NOT RUN` のままです。

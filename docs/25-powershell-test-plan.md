@@ -34,15 +34,15 @@ pwsh -NoProfile -File tests/powershell/Run-PowerShellTests.ps1
 ```text
 ok - PS-01 全スクリプトに構文エラーがない
 ...
-1..62
-# pass=62 fail=0
+1..66
+# pass=66 fail=0
 ```
 
-**件数は環境によって変わります。** Windowsでは PS-07（ファイル権限の確認）と PS-25（Windows以外での `-Execute` 拒否）が対象外になり、スキップした旨を1行で記録するため合計58件になります。件数が減るのは不具合ではなく、「この環境では対象外」と正直に記録した結果です。実測値は次のとおりです。
+**件数は環境によって変わります。** Windowsでは PS-07（ファイル権限の確認）と PS-25（Windows以外での `-Execute` 拒否）が対象外になり、スキップした旨を1行で記録するため、Linuxより2件少なくなります。件数が減るのは不具合ではなく、「この環境では対象外」と正直に記録した結果です。実測値は次のとおりです。
 
 | 実行環境 | 件数 |
 |---|---|
-| Linux（PowerShell 7.4.6） | 全件（実測: `1..62` / `pass=62 fail=0`） |
+| Linux（PowerShell 7.4.6） | 全件（実測: `1..66` / `pass=66 fail=0`） |
 | GitHub Actions ubuntu-latest | Linuxと同じ |
 | GitHub Actions windows-latest | PS-07とPS-25が対象外になるため**2件少ない** |
 
@@ -108,12 +108,13 @@ PS-30は、CIのWindowsジョブで実際に見つかった不具合の回帰テ
 
 | ID | 対象 | 条件 | 未実施の理由 |
 |---|---|---|---|
-| PS-40 | 構築 | Windows Server 実機での `-Execute` によるIIS導入 | Windows実機が必要。CIのwindows-latestは検証用であり、実運用のServer OSではない |
+| PS-40 | 構築 | Windows Server 実機での `-Execute` によるIIS導入 | CIのwindows-latestジョブはドライランまでで、役割の導入・サービス起動・ファイアウォール規則の作成を実行していないため |
 | PS-41 | 構築 | 再起動後のサービス自動起動とHTTP応答 | 再起動をまたぐ確認は実機VMが必要 |
 | PS-42 | 構築 | ファイアウォール許可後の、別端末からのポート到達性 | 2台以上のネットワーク環境が必要 |
 | PS-43 | 運用 | タスクスケジューラへ登録しての定期実行 | 登録内容と定期実行ログが必要。このパックには登録スクリプトを含めていない |
 | PS-44 | 運用 | 本番相当の容量・件数での性能と所要時間 | 実データが必要 |
 | PS-45 | 構成管理 | Ansible/DSC等による複数台への同一構成適用 | 未着手（[10. ロードマップ](10-server-build-roadmap.md)参照） |
+| PS-46 | 点検 | Windows実機での点検値の取得（`Get-CimInstance` によるCPU・メモリ、`Get-Service`、`Get-WinEvent`） | これらのコマンドはLinuxに存在せず、CIのWindowsジョブでも点検スクリプトを実サーバーに対して回していないため |
 
 ## 静的解析（PSScriptAnalyzer）
 
@@ -139,7 +140,7 @@ Invoke-ScriptAnalyzer -Path ./scripts/powershell -Recurse -Settings ./PSScriptAn
 2. 自動テスト（`Run-PowerShellTests.ps1`）
 3. PSScriptAnalyzer
 
-Windowsでも同じテストが通ることを公開の場で確認できるようにしています。ただし、CIのWindowsランナーは**クライアント相当の検証環境**であり、Windows Serverの実機ではありません。上の `NOT RUN` 表はCIが通っても解消されません。
+Windowsでも同じテストが通ることを公開の場で確認できるようにしています。CIのwindows-latestランナーはWindows Server 2025（イメージ `windows-2025-vs2026`、ジョブログの「Operating System」で確認）ですが、**このジョブが実行しているのはドライランと検証ロジックまで**で、IISの役割導入・サービス起動・ファイアウォール規則の作成は行っていません。上の `NOT RUN` 表はCIが通っても解消されません。
 
 ## 証跡テンプレート
 
