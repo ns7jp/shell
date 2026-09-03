@@ -33,7 +33,7 @@ write_config() {
 write_config "$LAB_SANDBOX/ok.conf" \
   "SOURCE_DIR=$source_dir" "BACKUP_DIR=$backup_dir" 'RETENTION_DAYS=7' 'ARCHIVE_PREFIX=test'
 write_config "$LAB_SANDBOX/unsafe.conf" \
-  'SOURCE_DIR=/' "BACKUP_DIR=$LAB_SANDBOX/backups-unsafe" 'RETENTION_DAYS=7' 'ARCHIVE_PREFIX=test'
+  'SOURCE_DIR=/proc' "BACKUP_DIR=$LAB_SANDBOX/backups-unsafe" 'RETENTION_DAYS=7' 'ARCHIVE_PREFIX=test'
 write_config "$LAB_SANDBOX/missing.conf" \
   "BACKUP_DIR=$backup_dir" 'RETENTION_DAYS=7' 'ARCHIVE_PREFIX=test'
 write_config "$LAB_SANDBOX/nested.conf" \

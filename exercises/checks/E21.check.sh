@@ -51,9 +51,12 @@ judge '(2) recall の合格日が2種類以上' "$recall_day_ok" \
 
 # --- (3) talk.md の7語の順 --------------------------------------------------
 # 各語が最初に出てくる「行番号と行内の位置」を取り、その並びが昇順かを見ます。
+# 見出し行（# で始まる行）は台本の本文ではないため、走査の対象から外します。
+# 見出しに「E21」と書いても、その 2 や 1 を数え始めないようにするためです。
 first_position() {
   local file=$1 needle=$2
   awk -v needle="$needle" '
+    /^[[:space:]]*#/ { next }
     { position = index($0, needle); if (position > 0) { printf "%06d%06d\n", NR, position; exit } }
   ' "$file"
 }

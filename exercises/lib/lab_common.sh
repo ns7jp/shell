@@ -106,17 +106,14 @@ lab_stage() {
 }
 
 # --- 実行 -------------------------------------------------------------------
-# 学習者のスクリプトは必ず子プロセスで、時間制限つきで動かします。
+# 学習者のスクリプトは必ず子プロセスで、次の3つの制限をかけて動かします。
+#   1. 時間制限（LAB_TIMEOUT秒）。終了しなければ SIGTERM、さらに5秒後に SIGKILL。
+#   2. 出力量の制限（LAB_MAX_OUTPUT_KB）。書き出しすぎる答案でディスクを埋めません。
+#   3. 独立したプロセスグループ。答案が裏で起動したプロセスも一緒に止めます。
+: "${LAB_MAX_OUTPUT_KB:=20480}"
+
 lab_run() {
-  LAB_STATUS=0
-  (
-    cd "$LAB_SANDBOX" || exit "$EXIT_ERROR"
-    env HOME="$LAB_SANDBOX" LC_ALL=C TZ=UTC \
-      LAB_COMMON="$LAB_COMMON" LAB_FIXTURES="$LAB_FIXTURES" LAB_REPO_DIR="$LAB_REPO_DIR" \
-      timeout "$LAB_TIMEOUT" "$@"
-  ) >"$LAB_STDOUT" 2>"$LAB_STDERR" || LAB_STATUS=$?
-  cat -- "$LAB_STDOUT" "$LAB_STDERR" >"$LAB_BOTH"
-  return 0
+  lab_run_env -- "$@"
 }
 
 # 追加の環境変数を渡して実行します（例: TARGET_SCRIPT や PATH の差し替え）。
@@ -130,12 +127,43 @@ lab_run_env() {
   LAB_STATUS=0
   (
     cd "$LAB_SANDBOX" || exit "$EXIT_ERROR"
+    # ulimit -f は1プロセスが書けるファイルサイズの上限です（ブロック単位）。
+    ulimit -f "$((LAB_MAX_OUTPUT_KB * 2))" 2>/dev/null || true
     env HOME="$LAB_SANDBOX" LC_ALL=C TZ=UTC \
       LAB_COMMON="$LAB_COMMON" LAB_FIXTURES="$LAB_FIXTURES" LAB_REPO_DIR="$LAB_REPO_DIR" \
-      "${assignments[@]}" timeout "$LAB_TIMEOUT" "$@"
+      "${assignments[@]}" timeout --kill-after=5 "$LAB_TIMEOUT" "$@"
   ) >"$LAB_STDOUT" 2>"$LAB_STDERR" || LAB_STATUS=$?
+  lab_sweep_leftovers
+  lab_truncate_output "$LAB_STDOUT"
+  lab_truncate_output "$LAB_STDERR"
   cat -- "$LAB_STDOUT" "$LAB_STDERR" >"$LAB_BOTH"
   return 0
+}
+
+# 答案が「&」で裏に流したプロセスは、時間制限では止まりません。
+# サンドボックスを作業場所にしているプロセスだけを、採点のたびに片付けます。
+lab_sweep_leftovers() {
+  [[ -n ${LAB_SANDBOX:-} && ${LAB_SANDBOX:-} == */labctl.* ]] || return 0
+  [[ -d /proc ]] || return 0
+  local entry pid cwd
+  for entry in /proc/[0-9]*; do
+    pid=${entry#/proc/}
+    [[ $pid == "$$" ]] && continue
+    cwd=$(readlink -- "$entry/cwd" 2>/dev/null) || continue
+    [[ $cwd == "$LAB_SANDBOX" || $cwd == "$LAB_SANDBOX"/* ]] || continue
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+}
+
+# 出力が大きすぎる場合は先頭だけを残します（比較も表示もこれで足ります）。
+lab_truncate_output() {
+  local file=$1 limit=$((LAB_MAX_OUTPUT_KB * 1024))
+  local size
+  size=$(stat -c '%s' -- "$file" 2>/dev/null || printf '0')
+  ((size > limit)) || return 0
+  head -c "$limit" -- "$file" >"$file.trimmed"
+  printf '\n[出力が %sKB を超えたため、ここで打ち切りました]\n' "$LAB_MAX_OUTPUT_KB" >>"$file.trimmed"
+  mv -- "$file.trimmed" "$file"
 }
 
 # --- 正規化 -----------------------------------------------------------------

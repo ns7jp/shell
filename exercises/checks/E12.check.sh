@@ -32,7 +32,7 @@ assert_ref_status 'EXECUTE 模範解答と同じ終了コード' "$script" "$ref
 assert_ref_status 'MISSING_SRC 模範解答と同じ終了コード' "$script" "$reference" \
   -- --dst "$LAB_SANDBOX/dst_missing"
 assert_ref_status 'SYSTEM_DST 模範解答と同じ終了コード' "$script" "$reference" \
-  -- --src "$src" --dst /etc
+  -- --src "$src" --dst /proc
 assert_ref_status 'UNKNOWN_ARG 模範解答と同じ終了コード' "$script" "$reference" \
   -- --src "$src" --dst "$LAB_SANDBOX/dst_unknown" --bogus
 

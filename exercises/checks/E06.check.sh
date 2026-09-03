@@ -22,7 +22,7 @@ config_value='/opt/app/app.conf'
 output_value='/opt/app/report.txt'
 cases_passed=0
 
-printf '# 6ケース: NORMAL / CONFIG_NO_VALUE / OUTPUT_NO_VALUE / UNKNOWN_ARG / HELP / NO_ARGS\n'
+printf '# 7ケース: NORMAL / NORMAL_DRYRUN / CONFIG_NO_VALUE / OUTPUT_NO_VALUE / UNKNOWN_ARG / HELP / NO_ARGS\n'
 
 # (1) NORMAL: 正常な指定。終了コードの一致に加えて、出力キー3つを見ます。
 before=$LAB_FAIL
@@ -31,6 +31,13 @@ assert_ref_status 'NORMAL: 終了コードが模範解答と一致' "$script" "$
 assert_contains "NORMAL: config=$config_value を出す" "$LAB_BOTH" "config=$config_value"
 assert_contains "NORMAL: output=$output_value を出す" "$LAB_BOTH" "output=$output_value"
 assert_contains 'NORMAL: execute=true を出す' "$LAB_BOTH" 'execute=true'
+if ((LAB_FAIL == before)); then cases_passed=$((cases_passed + 1)); fi
+
+# (1b) NORMAL_DRYRUN: --execute を付けない正常系。execute=false になります。
+before=$LAB_FAIL
+assert_ref_status 'NORMAL_DRYRUN: 終了コードが模範解答と一致' "$script" "$reference" -- \
+  --config "$config_value" --output "$output_value"
+assert_contains 'NORMAL_DRYRUN: execute=false を出す' "$LAB_BOTH" 'execute=false'
 if ((LAB_FAIL == before)); then cases_passed=$((cases_passed + 1)); fi
 
 # (2) CONFIG_NO_VALUE: --config を値なしで指定。
@@ -59,6 +66,6 @@ before=$LAB_FAIL
 assert_ref_status 'NO_ARGS: 終了コードが模範解答と一致' "$script" "$reference" --
 if ((LAB_FAIL == before)); then cases_passed=$((cases_passed + 1)); fi
 
-printf '# 6ケース中 %d 件通過\n' "$cases_passed"
+printf '# 7ケース中 %d 件通過\n' "$cases_passed"
 
 lab_finish

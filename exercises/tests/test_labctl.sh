@@ -71,10 +71,12 @@ if find "$ROOT_DIR/exercises/answers/wrong" -name '*.sh' -print -quit | grep -q 
 else
   ok '誤答例に .sh を置かない（make lint を壊さないため）'
 fi
-if find "$ROOT_DIR/exercises/fixtures/broken" -name '*.sh' -print -quit | grep -q .; then
-  not_ok '壊した教材に .sh を置かない'
+# 壊した教材は exercises/fixtures/start/EXX/ に .sh.broken で置きます。
+# ここに .sh を置くと make syntax が拾って CI が落ちます。
+if find "$ROOT_DIR/exercises/fixtures/start" -name '*.sh' -print -quit 2>/dev/null | grep -q .; then
+  not_ok '配布する壊した教材に .sh を置かない'
 else
-  ok '壊した教材に .sh を置かない'
+  ok '配布する壊した教材に .sh を置かない'
 fi
 catalog_rows=$(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv" | wc -l)
 if [[ $catalog_rows == 21 ]]; then ok '演習は21問'; else not_ok "演習は21問 (実測 $catalog_rows)"; fi
@@ -193,6 +195,80 @@ if [[ -z $card_problem ]]; then
 else
   printf '%s\n' "$card_problem" >"$tmp_dir/output"
   not_ok '暗記カードの関連演習IDが実在する'
+fi
+
+## 復習間隔が D1 / D3 / D7 / D21 に進むか -----------------------------------
+export LAB_HOME="$tmp_dir/spaced"
+bash "$LABCTL" init >/dev/null 2>&1
+printf '0\n1\n2\n' >"$LAB_HOME/L0/answer.txt"
+today=$(date '+%Y-%m-%d')
+expected_due=''
+for interval in 1 3 7 21; do
+  expected_due="$expected_due $(date -d "$today +$interval day" '+%Y-%m-%d')"
+done
+actual_due=''
+for _ in 1 2 3 4; do
+  bash "$LABCTL" grade E01 >/dev/null 2>&1
+  actual_due="$actual_due $(awk -F'\t' '$1 == "E01" {print $5}' "$LAB_HOME/progress/progress.tsv")"
+  # 次の合格を別の日として扱わせます（最終合格日を過去に戻します）。
+  awk -F'\t' -v OFS='\t' '$1 == "E01" {$4 = "2000-01-01"} {print}' "$LAB_HOME/progress/progress.tsv" >"$tmp_dir/p"
+  cp "$tmp_dir/p" "$LAB_HOME/progress/progress.tsv"
+done
+if [[ $actual_due == "$expected_due" ]]; then
+  ok '復習期日が D1 / D3 / D7 / D21 と進む'
+else
+  printf '期待=%s\n実測=%s\n' "$expected_due" "$actual_due" >"$tmp_dir/output"
+  not_ok '復習期日が D1 / D3 / D7 / D21 と進む'
+fi
+
+## 模範解答をディレクトリで持つ問題でも answer が使えるか ----------------------
+export LAB_HOME="$tmp_dir/lab"
+answer_problem=''
+while IFS=$'\t' read -r id _; do
+  [[ $id == E* ]] || continue
+  bash "$LABCTL" answer "$id" >/dev/null 2>&1 || answer_problem="$answer_problem $id"
+done < <(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv")
+if [[ -z $answer_problem ]]; then
+  ok '全21問で answer が模範解答を表示できる'
+else
+  printf '%s\n' "$answer_problem" >"$tmp_dir/output"
+  not_ok '全21問で answer が模範解答を表示できる'
+fi
+
+## 採点がリポジトリを汚さないか ------------------------------------------------
+if command -v git >/dev/null 2>&1 && git -C "$ROOT_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+  git -C "$ROOT_DIR" status --porcelain >"$tmp_dir/repo.before"
+  export LAB_HOME="$tmp_dir/dirty"
+  bash "$LABCTL" init >/dev/null 2>&1
+  # 検証を書いていない、危険な答案で採点しても外へ漏れないことを確かめます。
+  cat >"$LAB_HOME/L3/copyjob.sh" <<'ANSWER'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+source "${LAB_COMMON:?}"
+src=''; dst=''
+while (($#)); do
+  case "$1" in
+    --src) src=${2:-}; shift 2 ;;
+    --dst) dst=${2:-}; shift 2 ;;
+    --execute) shift ;;
+    *) die "不明な引数です: $1" ;;
+  esac
+done
+mkdir -p -- "$dst" 2>/dev/null || true
+cp -a -- "$src/." "$dst/" 2>/dev/null || true
+log OK "コピーしました: $dst"
+ANSWER
+  bash "$LABCTL" grade E12 >/dev/null 2>&1 || true
+  git -C "$ROOT_DIR" status --porcelain >"$tmp_dir/repo.after"
+  if diff -q "$tmp_dir/repo.before" "$tmp_dir/repo.after" >/dev/null; then
+    ok '検証を書いていない答案を採点してもリポジトリは汚れない'
+  else
+    diff -u "$tmp_dir/repo.before" "$tmp_dir/repo.after" >"$tmp_dir/output"
+    not_ok '検証を書いていない答案を採点してもリポジトリは汚れない'
+  fi
+  export LAB_HOME="$tmp_dir/lab"
+else
+  ok '採点がリポジトリを汚さない検査（git が無いため省略）'
 fi
 
 printf '1..%d\n' "$((pass + fail))"

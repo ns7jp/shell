@@ -27,7 +27,7 @@ log_path="$LAB_SANDBOX/evidence/audit.log"
 json_path="$LAB_SANDBOX/evidence/audit.json"
 
 assert_static '穴が埋まっている（tee があり __1__ が残っていない）' "$script" \
-  --must 'tee' --must-not '__[0-9]__'
+  --must 'tee' --must-not '^[^#]*__[0-9]__'
 
 # tee は別プロセスです。ログを書き終えるまで最大5秒だけ待ちます（8節で開示しています）。
 wait_for_log() {

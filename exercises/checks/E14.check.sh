@@ -16,8 +16,12 @@ script=$LAB_STAGED
 
 # 仕掛け: 被テストスクリプトを2本用意し、TARGET_SCRIPT で差し替えます
 # （問題文の8節で開示しています）。
-good="$LAB_DIR/answers/E12.ref.sh"
-bad="$LAB_DIR/answers/wrong/E12.wrong"
+# リポジトリ内の実ファイルを直接渡すと、学習者のテストがリポジトリへ書き込めてしまいます。
+# 必ずサンドボックスへ複製してから渡します。
+good="$LAB_SANDBOX/target_good.sh"
+bad="$LAB_SANDBOX/target_bad.sh"
+cp -- "$LAB_DIR/answers/E12.ref.sh" "$good"
+cp -- "$LAB_DIR/answers/wrong/E12.wrong" "$bad"
 
 assert_static 'パスを直書きせず TARGET_SCRIPT から受けている' "$script" \
   --must 'TARGET_SCRIPT' --must-not '^[^#]*__[0-9]__'

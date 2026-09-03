@@ -39,7 +39,20 @@ usage() {
 # 列: 演習ID 状態 初回合格日 最終合格日 次回期日 試行回数 ヒント段数 解答閲覧
 lab_progress_init() {
   mkdir -p -- "$LAB_PROGRESS_DIR"
-  [[ -f $LAB_PROGRESS ]] || printf '%s\n' '# 演習ID	状態	初回合格日	最終合格日	次回期日	試行回数	ヒント段数	解答閲覧' >"$LAB_PROGRESS"
+  [[ -f $LAB_PROGRESS ]] || printf '%s\n' '# 演習ID	状態	初回合格日	最終合格日	次回期日	試行回数	ヒント段数	解答閲覧	復習回数' >"$LAB_PROGRESS"
+}
+
+# 復習は D1 / D3 / D7 / D21 の4回だけです。合格するたびに次の節目へ進めます。
+lab_next_due() {
+  local reviews=$1 today=$2 interval
+  case "$reviews" in
+    0) interval=1 ;;
+    1) interval=3 ;;
+    2) interval=7 ;;
+    3) interval=21 ;;
+    *) printf '定着済み'; return 0 ;;
+  esac
+  date -d "$today +$interval day" '+%Y-%m-%d' 2>/dev/null || printf '%s' "$today"
 }
 
 lab_progress_get() {
@@ -52,28 +65,33 @@ lab_progress_get() {
 lab_progress_set() {
   local id=$1 status=$2 hint=$3 view=$4
   lab_progress_init
-  local today first last due attempts previous_hint previous_view temporary
+  local today first last due attempts previous_hint previous_view reviews temporary
   today=$(date '+%Y-%m-%d')
   first=$(lab_progress_get "$id" 3)
+  last=$(lab_progress_get "$id" 4)
+  due=$(lab_progress_get "$id" 5)
   attempts=$(lab_progress_get "$id" 6)
   previous_hint=$(lab_progress_get "$id" 7)
   previous_view=$(lab_progress_get "$id" 8)
+  reviews=$(lab_progress_get "$id" 9)
   [[ -n $attempts ]] || attempts=0
+  [[ $reviews =~ ^[0-9]+$ ]] || reviews=0
   attempts=$((attempts + 1))
   [[ $hint == '-' ]] && hint=${previous_hint:-0}
   [[ $view == '-' ]] && view=${previous_view:-no}
   if [[ $status == PASS ]]; then
+    # 同じ日に何度合格しても、復習の節目は1つしか進めません。
+    if [[ $last != "$today" ]]; then
+      due=$(lab_next_due "$reviews" "$today")
+      reviews=$((reviews + 1))
+    fi
     [[ -n $first ]] || first=$today
     last=$today
-    due=$(date -d "$today +1 day" '+%Y-%m-%d' 2>/dev/null || printf '%s' "$today")
-  else
-    last=$(lab_progress_get "$id" 4)
-    due=$(lab_progress_get "$id" 5)
   fi
   temporary=$(mktemp "$LAB_PROGRESS_DIR/.progress.XXXXXX")
   awk -F'\t' -v id="$id" '$1 != id' "$LAB_PROGRESS" >"$temporary"
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-    "$id" "$status" "${first:--}" "${last:--}" "${due:--}" "$attempts" "${hint:-0}" "${view:-no}" >>"$temporary"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$id" "$status" "${first:--}" "${last:--}" "${due:--}" "$attempts" "${hint:-0}" "${view:-no}" "$reviews" >>"$temporary"
   LC_ALL=C sort -o "$temporary" "$temporary"
   mv -- "$temporary" "$LAB_PROGRESS"
 }
@@ -281,8 +299,14 @@ cmd_answer() {
       *) lab_error "不明な引数です: $1" ;;
     esac
   done
-  local reference
-  reference=$(lab_reference_file "$LAB_ID") || lab_error "模範解答がありません: $LAB_ID"
+  local reference reference_dir="$LAB_DIR/answers/$LAB_ID.ref"
+  if [[ -d $reference_dir ]]; then
+    # 複数ファイルの模範解答は、作業ファイルと同じ相対パスのものを見せます。
+    reference="$reference_dir/$LAB_WORK"
+    [[ -f $reference ]] || lab_error "模範解答が見つかりません: $reference"
+  else
+    reference=$(lab_reference_file "$LAB_ID") || lab_error "模範解答がありません: $LAB_ID"
+  fi
   if [[ $diff_only == true ]]; then
     [[ -f $LAB_WORKFILE ]] || lab_error "自分の答案がありません: $LAB_WORKFILE"
     log INFO '左が自分の答案、右が模範解答です'
@@ -506,18 +530,35 @@ cmd_selfcheck() {
       sed -n '1,20p' "$temporary_home/out" | sed 's/^/#   /'
     fi
     # (2) 誤答は不合格になること（採点器が常に合格を返す欠陥を防ぎます）
-    local wrong_dir="$LAB_DIR/answers/wrong/$id.wrong.d" wrong_file="$LAB_DIR/answers/wrong/$id.wrong"
-    if [[ -d $wrong_dir || -f $wrong_file ]]; then
+    # 誤答例は1問につき何本あっても構いません（EXX.wrong / EXX.wrong2 / EXX.wrong.d）。
+    local wrong_dir="$LAB_DIR/answers/wrong/$id.wrong.d" wrong_case label
+    for wrong_case in "$LAB_DIR/answers/wrong/$id".wrong*; do
+      [[ -f $wrong_case ]] || continue
+      label=$(basename -- "$wrong_case")
       rm -rf -- "$temporary_home/lab"
       LAB_HOME="$temporary_home/lab" bash "$SCRIPT_DIR/labctl.sh" init >/dev/null 2>&1
-      lab_place_reference "$id" "$temporary_home/lab" "$wrong_dir" "$([[ -f $wrong_file ]] && printf '%s' "$wrong_file" || printf '')"
+      lab_place_reference "$id" "$temporary_home/lab" '' "$wrong_case"
       status=0
       LAB_HOME="$temporary_home/lab" bash "$LAB_CHECK" >"$temporary_home/out" 2>&1 || status=$?
       total=$((total + 1))
       if [[ $status == 1 ]]; then
-        pass=$((pass + 1)); printf 'ok - %s 誤答で不合格\n' "$id"
+        pass=$((pass + 1)); printf 'ok - %s 誤答で不合格（%s）\n' "$id" "$label"
       else
-        fail=$((fail + 1)); printf 'not ok - %s 誤答で不合格（終了%s）\n' "$id" "$status"
+        fail=$((fail + 1)); printf 'not ok - %s 誤答で不合格（%s / 終了%s）\n' "$id" "$label" "$status"
+        sed -n '1,20p' "$temporary_home/out" | sed 's/^/#   /'
+      fi
+    done
+    if [[ -d $wrong_dir ]]; then
+      rm -rf -- "$temporary_home/lab"
+      LAB_HOME="$temporary_home/lab" bash "$SCRIPT_DIR/labctl.sh" init >/dev/null 2>&1
+      lab_place_reference "$id" "$temporary_home/lab" "$wrong_dir" ''
+      status=0
+      LAB_HOME="$temporary_home/lab" bash "$LAB_CHECK" >"$temporary_home/out" 2>&1 || status=$?
+      total=$((total + 1))
+      if [[ $status == 1 ]]; then
+        pass=$((pass + 1)); printf 'ok - %s 誤答で不合格（%s.wrong.d）\n' "$id" "$id"
+      else
+        fail=$((fail + 1)); printf 'not ok - %s 誤答で不合格（%s.wrong.d / 終了%s）\n' "$id" "$id" "$status"
         sed -n '1,20p' "$temporary_home/out" | sed 's/^/#   /'
       fi
     fi
