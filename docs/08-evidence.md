@@ -151,3 +151,64 @@ bash exercises/labctl.sh evidence E09
 | 自由再生テスト（`labctl recall`） | NOT RUN | `recall.log` の合格記録（日付が2種類以上） |
 
 面接では、この表を「何を実施し、何をまだ実施していないか」の順で説明します。未実施を実施済みとして扱わないことが、この台帳の目的です。
+
+## 演習パックの検証記録
+
+```text
+日時: 2026-09-03 UTC
+環境: Ubuntu / Bash 5.2.21 / Python 3.11.15 / ShellCheck 0.9.0
+commit: ce5052f
+
+command: make check
+exit code: 0
+result: PASS
+evidence: 既存テスト 26/26 成功（演習パックの追加後も変化なし）
+
+command: make lint
+exit code: 0
+result: PASS
+evidence: 既存スクリプトの ShellCheck 指摘なし
+
+command: make lab-lint
+exit code: 0
+result: PASS
+evidence: 演習パックの ShellCheck 指摘なし（SC1090/SC1091 は source 追跡の制限として除外）
+
+command: make lab-selfcheck
+exit code: 0
+result: PASS
+evidence: 採点器の自己検査 46/46、採点ツールのテスト 37/37
+          （模範解答で合格21件・誤答で不合格24件・カード検査1件）
+
+command: 一般ユーザー(labtest)での make check / make lab-lint / make lab-selfcheck
+exit code: 0
+result: PASS
+evidence: root以外でも同じ結果。doctor は警告0件
+
+command: GitHub Actions (shell-quality / exercise-pack)
+result: PASS
+evidence: PR #8、Ubuntu runner（非root）で両ジョブ成功
+```
+
+### 採点器に対して実際に試した攻撃と結果
+
+敵対的レビューで再現した欠陥は修正済みです。修正後に同じ手順で再確認しました。
+
+| 試したこと | 修正前 | 修正後 |
+|---|---|---|
+| 検証を書いていない答案で E12 / E19 を採点 | `/etc` と `/` に実際に書き込めた | `/proc` を使うため書き込み不可。システムは無変更 |
+| 学習者のテストから被テストスクリプトへ書き込む（E14） | リポジトリ内の模範解答を壊せた | サンドボックスの複製のみ。リポジトリは無変更 |
+| 大量出力を出す答案 | 一時領域のピークが 10.4GB | 上限20MBで打ち切り、ピーク 60MB |
+| 停止要求を無視する答案 | 採点が返らない（無限） | 61秒で確実に終了 |
+| `&` で裏に流す答案 | 孤児プロセスが残り CPU を占有 | 採点のたびに回収、残留 0本 |
+| 雛形の指示どおりに埋めた正答（E17） | 必ず不合格になった | 合格する |
+| `--execute` を実装しない答案（E05 / E06） | 満点で合格した | 不合格になる |
+
+### まだ実施していないこと
+
+| 項目 | 状態 | 必要な証跡 |
+|---|---|---|
+| 学習者本人による21問の完走 | NOT RUN | `labctl progress --save` の出力 |
+| WSL2 での通し実行 | NOT RUN | CRLF 環境での採点結果 |
+| 実 Ubuntu VM での通し実行 | NOT RUN | 環境情報と採点ログ |
+| 21日間の復習サイクルの実運用 | NOT RUN | `progress.tsv` の次回期日の推移 |
