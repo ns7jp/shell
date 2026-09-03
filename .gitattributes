@@ -3,3 +3,7 @@
 Makefile text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.ps1 text eol=lf
+*.psm1 text eol=lf
+*.psd1 text eol=lf
+*.psd1.example text eol=lf

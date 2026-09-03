@@ -19,3 +19,49 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck
           make lint
+
+  powershell-quality:
+    # PowerShell演習案件パックは、Linux(CI用)とWindows(本来の対象)の両方で確認します。
+    # Windows専用の確認はテスト側で対象外にし、OSごとに確認する内容も変えるため、合格件数はOSで異なります。
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $total = 0
+          foreach ($file in Get-ChildItem scripts/powershell, tests/powershell -Recurse -Include '*.ps1', '*.psm1') {
+              $parseErrors = $null
+              $tokens = $null
+              [System.Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+              if ($parseErrors.Count -gt 0) {
+                  $total += $parseErrors.Count
+                  Write-Output ("{0}: {1} parse error(s)" -f $file.Name, $parseErrors.Count)
+                  $parseErrors | ForEach-Object { Write-Output ("  line {0}: {1}" -f $_.Extent.StartLineNumber, $_.Message) }
+              }
+          }
+          if ($total -gt 0) { exit 1 }
+          Write-Output 'PowerShell syntax OK'
+
+      - name: Run self-contained PowerShell tests
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File ./tests/powershell/Run-PowerShellTests.ps1
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          if (-not (Get-Module PSScriptAnalyzer -ListAvailable)) {
+              Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          }
+          $findings = @(Invoke-ScriptAnalyzer -Path ./scripts/powershell -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
+          $findings += @(Invoke-ScriptAnalyzer -Path ./tests/powershell -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
+          if ($findings.Count -gt 0) {
+              $findings | Format-Table -AutoSize RuleName, Severity, ScriptName, Line, Message | Out-String -Width 200 | Write-Output
+              exit 1
+          }
+          Write-Output 'PSScriptAnalyzer OK'

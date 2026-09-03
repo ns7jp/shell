@@ -8,3 +8,6 @@ config/*.conf
 !config/*.conf.example
 audit.log
 audit.json
+config/powershell/*.psd1
+!config/powershell/*.psd1.example
+*.zip

@@ -1,0 +1,25 @@
+# Install-WebServer.ps1（構築）と Test-WebServerBuild.ps1（受け入れ試験）が共用する設定です。
+# 「望ましい状態」を1か所に書き、構築時と確認時で値がずれないようにしています。
+@{
+    # 導入するWindowsの役割名です。Windows Serverでは Web-Server がIISを指します。
+    FeatureName      = 'Web-Server'
+
+    # 稼働を確認するサービス名です。W3SVC はIISのWebサービスです。
+    ServiceName      = 'W3SVC'
+
+    # サンプルページを置く絶対パスです。C:\Windows などの重要な場所は指定できません。
+    WebRoot          = 'C:\inetpub\wwwroot'
+
+    # サンプルページのタイトルです。
+    SiteTitle        = 'Sample Portfolio Web Server'
+
+    # ファイアウォールで許可するTCPポートです。3389はリモートデスクトップ、80はHTTPです。
+    AllowedTcpPorts  = @(3389, 80)
+
+    # HTTP応答を確認するポートと、確認に使うURLのパスです。
+    HttpPort         = 80
+    HealthCheckPath  = '/'
+
+    # 作成するファイアウォール規則の名前です。実際は「名前-ポート番号」で登録します。
+    FirewallRuleName = 'ops-lab-http'
+}
