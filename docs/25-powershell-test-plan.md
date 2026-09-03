@@ -38,6 +38,14 @@ ok - PS-01 全スクリプトに構文エラーがない
 # pass=60 fail=0
 ```
 
+**件数は環境によって変わります。** Windowsでは PS-07（ファイル権限の確認）と PS-25（Windows以外での `-Execute` 拒否）が対象外になり、スキップした旨を1行で記録するため合計58件になります。件数が減るのは不具合ではなく、「この環境では対象外」と正直に記録した結果です。実測値は次のとおりです。
+
+| 実行環境 | 結果 |
+|---|---|
+| Linux（PowerShell 7.4.6） | `1..60` / `pass=60 fail=0` |
+| GitHub Actions ubuntu-latest | `1..60` / `pass=60 fail=0` |
+| GitHub Actions windows-latest | `1..58` / `pass=58 fail=0` |
+
 ## 自動テストケース
 
 `tests/powershell/Run-PowerShellTests.ps1` の各アサーションに対応します。1つのIDが複数行の `ok -` を出すことがあります（終了コードとメッセージ内容を別々に確認するため）。

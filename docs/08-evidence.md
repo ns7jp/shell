@@ -45,9 +45,10 @@
 | Windows再起動後のサービス自動起動 | NOT RUN | 再起動をまたぐ確認は実機VMが必要 |
 | ファイアウォール許可後の別端末からの到達性 | NOT RUN | 2台以上のネットワーク環境が必要 |
 | タスクスケジューラでの定期実行 | NOT RUN | 登録スクリプトは本パックに含めていない |
-| GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、構文チェックと自動テストが成功。初回はPSScriptAnalyzerが`PSUseSingularNouns`を1件指摘したため関数名を修正 |
-| GitHub ActionsのPowerShellジョブ（windows-latest） | PASS（修正後） | 2026-09-03、初回は56件中2件失敗（PS-16）。パス区切りの混在で安全検査がすり抜ける不具合を修正し、回帰テストPS-30を追加 |
-| PSScriptAnalyzer（CI上） | PASS（修正後） | 2026-09-03、ubuntu-latestで実行。指摘1件を修正済み。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
+| GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、コミット`307c406`で構文チェック・自動テスト・PSScriptAnalyzerすべて成功。初回コミット`146a1b2`では`PSUseSingularNouns`を1件指摘され失敗 |
+| GitHub ActionsのPowerShellジョブ（windows-latest） | PASS | 2026-09-03、コミット`307c406`で `1..58 / pass=58 fail=0`、PSScriptAnalyzerも `PSScriptAnalyzer OK`。初回コミット`146a1b2`では `pass=54 fail=2`（PS-16がWindowsでのみ失敗） |
+| PSScriptAnalyzer（CI上） | PASS | 2026-09-03、ubuntu-latest・windows-latestの両方で指摘0件。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
+| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Windows Server 2022相当）で58/58成功。PS-07とPS-25はWindowsでは対象外としてスキップされるため、Linuxの60件より2件少ない |
 
 ## ローカル検証記録
 
@@ -227,3 +228,18 @@ Windows実機を持っていなくても、CIのwindows-latestジョブがあれ
 ```
 
 **Linuxだけで検証していたら、どちらも見逃していました。** 「両方のOSでCIを回す」ことの効果が実際に出た例です。
+
+修正後のCI結果（コミット `307c406`）は次のとおりです。
+
+```text
+shell-quality (ubuntu-latest)              success
+powershell-quality (ubuntu-latest)         success   自動テスト 60/60、PSScriptAnalyzer 指摘0件
+powershell-quality (windows-latest)        success   自動テスト 58/58（1..58 / pass=58 fail=0）、PSScriptAnalyzer 指摘0件
+```
+
+Windowsの件数が2件少ないのは、PS-07（ファイル権限の確認）とPS-25（Windows以外での `-Execute` 拒否）が
+Windowsでは対象外となり、スキップした旨を1行で記録するためです。件数が環境で変わること自体を
+「対象外と記録した結果」として説明できる状態にしてあります。
+
+**この結果はCIランナー（Windows Server 2022相当）でのものであり、IISを実際に構築したわけではありません。**
+役割の導入・サービスの自動起動・ファイアウォール規則の作成と到達性は、上の台帳のとおり `NOT RUN` のままです。
