@@ -1,6 +1,6 @@
 # 08. 検証証跡
 
-この文書は、確認できた事実と今後実施する作業を分けるための台帳です。環境が変わるたびに、実行日時、OS、Bash、コミットID、コマンド、終了コードを追記してください。
+この文書は、確認できた事実と今後実施する作業を分けるための台帳です。環境が変わるたびに、実行日時、OS、Bash/PowerShellのバージョン、コミットID、コマンド、終了コードを追記してください。
 
 ## 判定の意味
 
@@ -30,6 +30,22 @@
 | 実Ubuntu VMでの構築・再起動後のsystemd自動起動 | NOT RUN | コンテナにはsystemdがなく確認不能。実VMでの確認が必要 |
 | 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 |
 | Ansible等による構成管理の再現性 | NOT RUN | [構築ロードマップ](10-server-build-roadmap.md)のPhase 2相当、未着手 |
+| PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象6ファイル、`make ps-syntax` 終了0 |
+| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 58/58成功、終了0、追加モジュール不要 |
+| PowerShell点検スクリプトの実行 | PASS | 2026-09-03、Linux上で `Invoke-ServerAudit.ps1` 実行、Windows専用コマンド不在の2項目をWARN、終了1 |
+| PowerShellログのJSON証跡化 | PASS | 2026-09-03、既存の `audit_report.py` を無改修で再利用、`result=WARN`、終了1 |
+| PowerShell構築スクリプトのドライラン | PASS | 2026-09-03、`Install-WebServer.ps1`（`-Execute` なし）でファイル未作成を確認、終了1（環境依存の警告3件） |
+| PowerShell構築スクリプトのOS・権限拒否 | PASS | 2026-09-03、Linuxで `-Execute` を指定すると実行前に終了2で拒否 |
+| PowerShellバックアップの作成と整合性確認 | PASS | 2026-09-03、`New-DataBackup.ps1 -Execute` でZIP作成、開いて1件を確認、終了0 |
+| PowerShellログ保守 | PASS | 2026-09-03、`Invoke-LogMaintenance.ps1 -Execute` で圧縮後に元ログ0バイト、終了0 |
+| PowerShell設定検証（フェイルクローズ） | PASS | 2026-09-03、危険パス・範囲外の値・必須欠落・処理入り`.psd1`をすべて終了2で拒否 |
+| PSScriptAnalyzer（PowerShell静的解析） | NOT RUN（ローカル） | 2026-09-03、検証環境からPowerShell Galleryへ到達できずインストール不可。CIの `powershell-quality` ジョブで実行する設定を追加済みだが、結果は未確認 |
+| Windows実機でのIIS構築（`Install-WebServer.ps1 -Execute`） | NOT RUN | Windows実機が必要。役割導入・サービス自動起動・ファイアウォール規則は未確認 |
+| Windows実機での受け入れ試験（全項目OK） | NOT RUN | 構築が未実施のため。Linuxでは5項目すべてWARNになることのみ確認済み |
+| Windows再起動後のサービス自動起動 | NOT RUN | 再起動をまたぐ確認は実機VMが必要 |
+| ファイアウォール許可後の別端末からの到達性 | NOT RUN | 2台以上のネットワーク環境が必要 |
+| タスクスケジューラでの定期実行 | NOT RUN | 登録スクリプトは本パックに含めていない |
+| GitHub ActionsのPowerShellジョブ（Linux/Windows） | NOT RUN | ワークフローを追加した時点では未実行。初回実行後に結果を追記すること |
 
 ## ローカル検証記録
 
@@ -118,3 +134,73 @@ evidence:
 ```
 
 スクリーンショットだけでなく、再現可能なテキストログとコマンドを優先します。秘密情報、ユーザー名、内部IP、ホスト名は公開前にマスキングしてください。
+
+## PowerShell演習パックの検証記録
+
+```text
+日時: 2026-09-03 UTC
+環境: Linuxコンテナ、Ubuntu 24.04.4 LTS、root、PowerShell 7.4.6
+commit: 作業ツリー（未コミット）
+
+command: make ps-syntax
+exit code: 0
+result: PASS
+evidence: scripts/powershell と tests/powershell の6ファイルすべてで構文エラーなし
+  （PowerShellのパーサー [System.Management.Automation.Language.Parser]::ParseFile で確認）
+
+command: pwsh -NoProfile -File tests/powershell/Run-PowerShellTests.ps1
+exit code: 0
+result: PASS
+evidence: pass=58 fail=0。追加モジュール（Pester等）のインストールなしで完走。
+  Windows専用の確認を含むPS-07・PS-25は、この環境では実行対象（Linux側）として通過。
+
+command: pwsh -NoProfile -File scripts/powershell/Invoke-ServerAudit.ps1 --ConfigPath ... --OutputPath audit.log
+exit code: 1
+result: PASS（警告2件は環境依存のため想定どおり）
+evidence: CPU・メモリ・ディスク・ログディレクトリはOK。Get-Service と Get-WinEvent が
+  存在しないためWARN 2件。実際の出力は examples/powershell-audit-output.md に掲載。
+
+command: python3 scripts/audit_report.py --input audit.log --output audit.json
+exit code: 1
+result: PASS
+evidence: schema_version 1 のJSONを作成。counts={"INFO":4,"OK":4,"WARN":3,"ERROR":0}、
+  result="WARN"。Bash版のために作った既存スクリプトを1行も変更せずに再利用できた。
+
+command: pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath ...
+exit code: 1
+result: PASS（ドライラン。警告3件は環境依存）
+evidence: [DRY-RUN] 行を表示し、WebRoot に index.html は作成されなかった。
+  Windows専用コマンド（役割導入・ファイアウォール・サービス）が無いためWARN 3件。
+
+command: pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath ... -Execute
+exit code: 2
+result: PASS
+evidence: 「この構築処理はWindowsでのみ実行できます」で実行前に拒否。システムへの変更なし。
+
+command: pwsh -NoProfile -File scripts/powershell/New-DataBackup.ps1 -ConfigPath ... -Execute
+exit code: 0
+result: PASS
+evidence: ZIPを作成後、[System.IO.Compression.ZipFile]::OpenRead で開いて1件を確認。
+  ドライラン時はファイルが作られないことも確認済み。
+
+command: pwsh -NoProfile -File scripts/powershell/Invoke-LogMaintenance.ps1 -ConfigPath ... -Execute
+exit code: 0
+result: PASS
+evidence: 5日前の app.log を圧縮し、圧縮成功を確認してから元ログを0バイトにした。
+
+command: 設定検証系（危険パス、範囲外の値、必須項目の欠落、処理が書かれた .psd1）
+exit code: 2（すべて）
+result: PASS
+evidence: いずれも処理を始める前に拒否。特に処理が書かれた .psd1 は
+  Import-PowerShellDataFile がデータ以外を読まないため、コマンドは実行されなかった。
+
+command: Install-Module PSScriptAnalyzer
+exit code: -
+result: NOT RUN
+evidence: 検証環境からPowerShell Galleryへ到達できず（プロキシで拒否）。
+  CIの powershell-quality ジョブで実行する設定は追加済みだが、結果は未確認。
+```
+
+この結果は**Linux上のPowerShell 7による検証**です。Windows Server実機でのIIS導入、サービスの自動起動、ファイアウォール規則の作成と到達性は確認できていません。上の台帳で `NOT RUN` と明記しています。
+
+Windows専用コマンドが存在しない環境で警告になる項目は、[25. テスト仕様](25-powershell-test-plan.md)の `NOT RUN` 表と対応しています。**「Linuxで動いた」ことを「Windowsで動く」と書き換えないでください。**

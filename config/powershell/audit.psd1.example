@@ -1,0 +1,22 @@
+# Invoke-ServerAudit.ps1 の設定例です。
+# .psd1 は「データだけ」を書く形式で、コマンドは書けません(書くと読み込み時に拒否されます)。
+@{
+    # しきい値は整数のパーセントで指定します。この値以上でWARNになります。
+    CpuWarnPercent    = 80
+    MemoryWarnPercent = 80
+    DiskWarnPercent   = 80
+
+    # 稼働を確認するサービス名の一覧です。存在しないサービスはWARNになります。
+    # W32Time は時刻同期、EventLog はイベントログ、W3SVC はIISのサービスです。
+    CheckServices     = @('W32Time', 'EventLog')
+
+    # 読み取りできることを確認するログ格納先です。絶対パスで指定します。
+    LogDirectory      = 'C:\ProgramData\ops-lab\logs'
+
+    # システムイベントログのエラーを、直近何時間ぶんで何件からWARNにするか。
+    EventLogHours          = 24
+    EventLogErrorThreshold = 1
+}
+
+# Windowsが手元にない場合は、パスを自分のホーム配下に書き換えて練習できます。
+# 例: LogDirectory = '/home/ユーザー名/ps-lab/logs'

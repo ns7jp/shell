@@ -1,0 +1,14 @@
+# Invoke-LogMaintenance.ps1 の設定例です。
+@{
+    # 対象は LogDirectory 直下の *.log だけです。サブディレクトリは辿りません。
+    LogDirectory      = 'C:\ops-lab\applogs'
+
+    # 圧縮したファイルの保管先です。
+    ArchiveDirectory  = 'C:\ops-lab\applogs\archive'
+
+    # 最終更新がこの日数より前のログを圧縮します。
+    CompressAfterDays = 1
+
+    # 圧縮済みファイルをこの日数より前で削除します。CompressAfterDays より大きくします。
+    DeleteAfterDays   = 30
+}
