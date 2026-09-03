@@ -129,6 +129,38 @@ else
   not_ok 'docs/15 の一覧表に21問すべてが載っている'
 fi
 
+## 一覧表・問題文・暗記カードの内容が食い違っていないか --------------------------
+drift=''
+while IFS=$'\t' read -r id level _ _ title minutes work _ _; do
+  [[ $id == E* ]] || continue
+  doc="$ROOT_DIR/exercises/levels/$level/$id.md"
+  [[ -f $doc ]] || continue
+  heading=$(head -n 1 "$doc")
+  [[ $heading == "# $id $title" ]] || drift="$drift $id:題名"
+  grep -Fq "| $minutes分 |" "$doc" || drift="$drift $id:目安分"
+  grep -Fq "$work" "$doc" || drift="$drift $id:作業ファイル"
+done < <(awk -F'\t' '$1 ~ /^E[0-9]+$/' "$ROOT_DIR/exercises/exercises.tsv")
+if [[ -z $drift ]]; then
+  ok '一覧表の題名・目安分・作業ファイルが問題文と一致する'
+else
+  printf '%s\n' "$drift" >"$tmp_dir/output"
+  not_ok '一覧表の題名・目安分・作業ファイルが問題文と一致する'
+fi
+
+# 暗記カードは docs/17 の印刷用ページと同一に保ちます（Markdownのコード表記は無視します）。
+sed 's/`//g' "$ROOT_DIR/docs/17-memory-cheatsheet.md" >"$tmp_dir/cheatsheet.plain"
+card_drift=''
+while IFS=$'\t' read -r card_id _ _ back _; do
+  [[ $card_id == \#* || -z $card_id ]] && continue
+  grep -Fq "$back" "$tmp_dir/cheatsheet.plain" || card_drift="$card_drift $card_id"
+done <"$ROOT_DIR/exercises/cards/cards.tsv"
+if [[ -z $card_drift ]]; then
+  ok '暗記カード17枚の内容が docs/17 と一致する'
+else
+  printf '%s\n' "$card_drift" >"$tmp_dir/output"
+  not_ok '暗記カード17枚の内容が docs/17 と一致する'
+fi
+
 ## start 直後の未着手状態が合格してしまわないか ---------------------------------
 # 雛形が答えそのものになっていると、学習者が何もしなくても合格してしまいます。
 trivial=''
