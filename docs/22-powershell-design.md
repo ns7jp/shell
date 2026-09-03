@@ -30,7 +30,8 @@
 | `load_config PATH` | `Import-OpsConfig -Path PATH` | 設定ファイルを読み込む |
 | `: "${KEY:=既定値}"` / 必須チェック | `Get-OpsConfigValue -Config … -Key … [-Default …] [-Required]` | 設定値の取り出し |
 | `require_integer_range` | `Assert-OpsIntegerRange` | 整数と範囲の確認 |
-| `require_absolute_safe_path` | `Assert-OpsSafePath` | 絶対パスと危険パスの確認 |
+| `require_absolute_safe_path` | `Assert-OpsSafePath` | 絶対パスと危険パスの確認、区切り文字の正規化 |
+| （`case` 文の拒否リスト） | `Get-OpsProtectedPath` | 指定してはいけないディレクトリの一覧を返す |
 | （`id -u` が0か） | `Test-OpsAdministrator` | 管理者権限の確認 |
 | `run_or_show` | `Invoke-OpsAction` | ドライランか実行かの振り分け |
 | `exec > >(tee -a FILE)` | `Start-OpsLogFile -Path FILE` | ログをファイルにも書く |
@@ -46,6 +47,55 @@
 | `rotate_app_logs.sh` | `Invoke-LogMaintenance.ps1` | ログ保守 |
 | `tests/run_tests.sh` | `tests/powershell/Run-PowerShellTests.ps1` | 自動テスト |
 | `audit_report.py` | （同じものを再利用） | JSON証跡化 |
+
+## 設定キー一覧
+
+設定ファイルはスクリプトごとに分かれています。`Install-WebServer.ps1` と `Test-WebServerBuild.ps1` だけは、構築時と確認時で値がずれないよう**同じファイルを共有**します。
+
+### `config/powershell/audit.psd1.example`（`Invoke-ServerAudit.ps1`）
+
+| キー | 意味 | 既定値 | 必須 |
+|---|---|---|:---:|
+| `CpuWarnPercent` | CPU使用率のしきい値（1〜100） | `80` | - |
+| `MemoryWarnPercent` | メモリ使用率のしきい値（1〜100） | `80` | - |
+| `DiskWarnPercent` | ディスク使用率のしきい値（1〜100） | `80` | - |
+| `CheckServices` | 稼働を確認するサービス名の配列 | `@()` | - |
+| `LogDirectory` | 読み取り可否を確認するログ格納先（絶対パス） | なし | ○ |
+| `EventLogHours` | イベントログを何時間ぶん見るか（1〜168） | `24` | - |
+| `EventLogErrorThreshold` | エラー何件からWARNにするか | `1` | - |
+
+### `config/powershell/websetup.psd1.example`（構築と受け入れ試験で共用）
+
+| キー | 意味 | 既定値 | 必須 | 使うスクリプト |
+|---|---|---|:---:|---|
+| `FeatureName` | 導入・確認するWindowsの役割名 | なし | ○ | 両方 |
+| `ServiceName` | 起動・確認するサービス名 | なし | ○ | 両方 |
+| `WebRoot` | サンプルページを置く絶対パス | なし | ○ | 両方 |
+| `SiteTitle` | サンプルページのタイトル | なし | ○ | `Install-WebServer.ps1` のみ |
+| `AllowedTcpPorts` | 許可するTCPポートの配列 | `@(HttpPort)` | - | `Install-WebServer.ps1` のみ |
+| `HttpPort` | HTTP応答を確認するポート（1〜65535） | `80` | - | 両方 |
+| `HealthCheckPath` | 確認に使うURLのパス（`/` で始める） | `/` | - | `Test-WebServerBuild.ps1` のみ |
+| `FirewallRuleName` | 作る規則名の接頭辞（実際は「名前-ポート」） | `ops-lab-http` | - | 両方 |
+
+### `config/powershell/backup.psd1.example`（`New-DataBackup.ps1`）
+
+| キー | 意味 | 既定値 | 必須 |
+|---|---|---|:---:|
+| `SourceDirectory` | 保存元（絶対パス） | なし | ○ |
+| `BackupDirectory` | 保存先（絶対パス。`SourceDirectory` の中は不可） | なし | ○ |
+| `RetentionDays` | 世代を残す日数（1〜3650） | `7` | - |
+| `ArchivePrefix` | アーカイブ名の接頭辞（英数字・`-`・`_` のみ） | なし | ○ |
+
+### `config/powershell/logmaintenance.psd1.example`（`Invoke-LogMaintenance.ps1`）
+
+| キー | 意味 | 既定値 | 必須 |
+|---|---|---|:---:|
+| `LogDirectory` | 対象のログ格納先（直下の `*.log` のみ） | なし | ○ |
+| `ArchiveDirectory` | 圧縮ファイルの保管先 | なし | ○ |
+| `CompressAfterDays` | 何日前より古いログを圧縮するか（0〜3650） | `1` | - |
+| `DeleteAfterDays` | 何日前より古い圧縮ファイルを削除するか（`CompressAfterDays` より大きい値） | `30` | - |
+
+必須のキーを書き忘れると、実行したスクリプトが**項目名を示して**終了コード2で止まります（例:「`LogDirectory は必須です`」）。数値の範囲やパスの安全性も、処理を始める前に確認します。
 
 ## ログ書式をそろえた理由
 
