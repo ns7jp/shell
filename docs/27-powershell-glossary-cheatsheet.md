@@ -134,7 +134,7 @@ Get-Help .\scripts\powershell\Install-WebServer.ps1 -Full
 
 ---
 
-## 7. Bashから来た人がハマる9つ
+## 7. Bashから来た人がハマる10個
 
 | Bashでの感覚 | PowerShellでの現実 | 正しいやり方 |
 |---|---|---|
@@ -147,6 +147,7 @@ Get-Help .\scripts\powershell\Install-WebServer.ps1 -Full
 | `=` で比較する | `=` は代入。`if ($x = 5)` は常に真になる | 比較は `-eq` `-ne` `-lt` `-ge` |
 | `*` は何にでも一致 | `-like` では `[ ]` が文字クラスになる（`'[DRY-RUN]'` が一致しない） | 文字そのものを探すなら `.Contains()` |
 | `die` は関数から抜けるだけ | 関数内の `exit` は**スクリプト全体**を終了させる | 本パックはこれを意図的に使う（`Stop-OpsScript` = Bashの `die`）。他人のコードで見たら意図を確認する |
+| パス区切りは `/` だけ | Windowsは `\` と `/` のどちらも通す。文字列比較すると `C:\a\src/inner` が `C:\a\src\` で始まらない扱いになる | 比較の前にOSの形へそろえる（本パックは `Assert-OpsSafePath` が行う） |
 
 ---
 

@@ -312,7 +312,15 @@ function Assert-OpsSafePath {
         Stop-OpsScript -Message "$Name に .. は使用できません: $Path"
     }
 
-    $normalized = $Path.TrimEnd('\', '/')
+    # 区切り文字をそのOSの形にそろえてから判定します。
+    # Windowsは \ と / のどちらも区切りとして通ってしまうため、そろえずに文字列比較すると
+    # 'C:\data\source/inner' が 'C:\data\source\' で始まらない扱いになり、
+    # 「保存先が保存元の中にある」といった検査をすり抜けます（CIのWindowsジョブで実際に発生）。
+    $normalized = $Path
+    if ($IsWindows) {
+        $normalized = $normalized.Replace('/', '\')
+    }
+    $normalized = $normalized.TrimEnd('\', '/')
     if ($normalized -eq '') {
         # "/" や "C:\" のようにドライブ・ルートそのものを指した場合です。
         Stop-OpsScript -Message "$Name にドライブやルートそのものは指定できません: $Path"

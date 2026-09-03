@@ -38,7 +38,7 @@ Windows側を扱う3つ目のパックとして、**PowerShell演習案件パッ
 - [PowerShell運用・障害対応手順](26-powershell-operations-runbook.md)
 - [PowerShell用語集・チートシート](27-powershell-glossary-cheatsheet.md)
 
-実装したのは、`scripts/powershell/` 配下の5本のスクリプトと共通モジュール `OpsCommon.psm1`、設定例（`.psd1`）、追加モジュール不要の自動テスト（58件）、Linux/Windows両方で回るCIジョブです。ログ書式をBash版と1文字も違わない形にそろえたため、**JSON証跡化には新しいスクリプトを作らず、既存の `scripts/audit_report.py` をそのまま再利用しています。**
+実装したのは、`scripts/powershell/` 配下の5本のスクリプトと共通モジュール `OpsCommon.psm1`、設定例（`.psd1`）、追加モジュール不要の自動テスト（60件）、Linux/Windows両方で回るCIジョブです。ログ書式をBash版と1文字も違わない形にそろえたため、**JSON証跡化には新しいスクリプトを作らず、既存の `scripts/audit_report.py` をそのまま再利用しています。**
 
 検証はLinux上のPowerShell 7で、構文検証・自動テスト・ドライラン・バックアップ・ログ保守・証跡化まで確認できました。次はまだ未実施です。
 

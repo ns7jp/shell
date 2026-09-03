@@ -72,7 +72,7 @@ function Assert-ExitCode {
     else { Write-TestFail -Name $Name -Detail "expected=$Expected actual=$actual" }
 }
 
-function Assert-OutputContains {
+function Assert-OutputContainsText {
     param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Needle)
     # -like は [ ] をワイルドカードとして解釈するため、'[DRY-RUN]' の判定に使えません。
     # 文字列そのものを探すときは Contains を使います。
@@ -126,28 +126,28 @@ Import-Module '$modulePath' -Force
 Assert-OpsSafePath -Name 'TargetPath' -Path 'relative/path'
 "@ | Out-Null
     Assert-ExitCode -Name 'PS-02 相対パスを終了コード2で拒否する' -Expected 2 -Path $moduleProbe
-    Assert-OutputContains -Name 'PS-02 拒否理由に絶対パスと書かれている' -Needle '絶対パス'
+    Assert-OutputContainsText -Name 'PS-02 拒否理由に絶対パスと書かれている' -Needle '絶対パス'
 
     New-TestConfig -Path $moduleProbe -Body @"
 Import-Module '$modulePath' -Force
 Assert-OpsSafePath -Name 'TargetPath' -Path '$dangerousPath'
 "@ | Out-Null
     Assert-ExitCode -Name 'PS-03 重要なシステムディレクトリを終了コード2で拒否する' -Expected 2 -Path $moduleProbe
-    Assert-OutputContains -Name 'PS-03 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
+    Assert-OutputContainsText -Name 'PS-03 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
 
     New-TestConfig -Path $moduleProbe -Body @"
 Import-Module '$modulePath' -Force
 Assert-OpsIntegerRange -Name 'CpuWarnPercent' -Value 101 -Minimum 1 -Maximum 100
 "@ | Out-Null
     Assert-ExitCode -Name 'PS-04 範囲外の数値を終了コード2で拒否する' -Expected 2 -Path $moduleProbe
-    Assert-OutputContains -Name 'PS-04 拒否理由に範囲が書かれている' -Needle '1 から 100 の範囲'
+    Assert-OutputContainsText -Name 'PS-04 拒否理由に範囲が書かれている' -Needle '1 から 100 の範囲'
 
     New-TestConfig -Path $moduleProbe -Body @"
 Import-Module '$modulePath' -Force
 Import-OpsConfig -Path '$temporaryRoot/does-not-exist.psd1'
 "@ | Out-Null
     Assert-ExitCode -Name 'PS-05 存在しない設定ファイルを終了コード2で拒否する' -Expected 2 -Path $moduleProbe
-    Assert-OutputContains -Name 'PS-05 拒否理由を説明している' -Needle '設定ファイルが見つかりません'
+    Assert-OutputContainsText -Name 'PS-05 拒否理由を説明している' -Needle '設定ファイルが見つかりません'
 
     # 設定ファイルに「処理」を書いた場合。Bashのsourceはこれを実行してしまいますが、
     # Import-PowerShellDataFile はデータ以外を読み込みません。
@@ -163,7 +163,7 @@ Import-Module '$modulePath' -Force
 Import-OpsConfig -Path '$executableConfig'
 "@ | Out-Null
     Assert-ExitCode -Name 'PS-06 処理が書かれた設定ファイルを終了コード2で拒否する' -Expected 2 -Path $moduleProbe
-    Assert-OutputContains -Name 'PS-06 拒否理由を説明している' -Needle '設定ファイルを読み込めません'
+    Assert-OutputContainsText -Name 'PS-06 拒否理由を説明している' -Needle '設定ファイルを読み込めません'
 
     if (-not $IsWindows -and (Get-Command chmod -ErrorAction SilentlyContinue)) {
         $worldWritableConfig = Join-Path $temporaryRoot 'world-writable.psd1'
@@ -174,7 +174,7 @@ Import-Module '$modulePath' -Force
 Import-OpsConfig -Path '$worldWritableConfig'
 "@ | Out-Null
         Assert-ExitCode -Name 'PS-07 他ユーザーが書き込める設定ファイルを終了コード2で拒否する' -Expected 2 -Path $moduleProbe
-        Assert-OutputContains -Name 'PS-07 拒否理由に chmod go-w を示す' -Needle 'chmod go-w'
+        Assert-OutputContainsText -Name 'PS-07 拒否理由に chmod go-w を示す' -Needle 'chmod go-w'
     }
     else {
         Write-TestPass -Name 'PS-07 権限確認テストはこの環境では対象外(Windows)'
@@ -211,6 +211,19 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
     Assert-True -Name 'PS-29 複数行メッセージが1行にまとめられる' `
         -Condition ($flatLines.Count -eq 1 -and $flatLines[0] -match $logPattern) -Detail "lines=$($flatLines.Count)"
 
+    # パス区切りをOSの形にそろえていることを確認します。
+    # Windowsでは \ と / の混在が「保存先が保存元の中にある」検査をすり抜けるため、
+    # ここが壊れると安全機構が無効になります（CIのWindowsジョブで実際に発生した不具合）。
+    $mixedPath = if ($IsWindows) { 'C:\ops-lab\source/inner/' } else { '/tmp/ops-lab/source/inner/' }
+    $expectedPath = if ($IsWindows) { 'C:\ops-lab\source\inner' } else { '/tmp/ops-lab/source/inner' }
+    New-TestConfig -Path $moduleProbe -Body @"
+Import-Module '$modulePath' -Force
+Write-Output (Assert-OpsSafePath -Name 'TargetPath' -Path '$mixedPath')
+"@ | Out-Null
+    Assert-ExitCode -Name 'PS-30 パス正規化が正常終了する' -Expected 0 -Path $moduleProbe
+    Assert-True -Name 'PS-30 パス区切りと末尾がOSの形にそろえられる' `
+        -Condition ($script:LastOutput.Trim() -eq $expectedPath) -Detail "actual=$($script:LastOutput.Trim()) expected=$expectedPath"
+
     ## PS-10..PS-12 点検 ---------------------------------------------------
     $auditScript = Join-Path $scriptDirectory 'Invoke-ServerAudit.ps1'
     $auditConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'audit.psd1') -Body @"
@@ -226,17 +239,17 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
 "@
     $auditStatus = Invoke-TargetScript -Path $auditScript -ScriptArguments @('-ConfigPath', $auditConfig)
     Assert-True -Name 'PS-10 点検が正常終了または警告終了する' -Condition ($auditStatus -eq 0 -or $auditStatus -eq 1) -Detail "status=$auditStatus"
-    Assert-OutputContains -Name 'PS-10 点検の開始を記録する' -Needle 'サーバー点検を開始します'
+    Assert-OutputContainsText -Name 'PS-10 点検の開始を記録する' -Needle 'サーバー点検を開始します'
 
     $auditBadConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'audit-bad.psd1') -Body @"
 @{ CpuWarnPercent = 101; LogDirectory = '$logDirectory' }
 "@
     Assert-ExitCode -Name 'PS-11 しきい値が範囲外なら終了コード2' -Expected 2 -Path $auditScript -ScriptArguments @('-ConfigPath', $auditBadConfig)
-    Assert-OutputContains -Name 'PS-11 拒否理由に範囲が書かれている' -Needle '1 から 100 の範囲'
+    Assert-OutputContainsText -Name 'PS-11 拒否理由に範囲が書かれている' -Needle '1 から 100 の範囲'
 
     $auditMissingConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'audit-missing.psd1') -Body '@{ CpuWarnPercent = 80 }'
     Assert-ExitCode -Name 'PS-12 必須設定が無ければ終了コード2' -Expected 2 -Path $auditScript -ScriptArguments @('-ConfigPath', $auditMissingConfig)
-    Assert-OutputContains -Name 'PS-12 拒否理由に項目名が出る' -Needle 'LogDirectory は必須です'
+    Assert-OutputContainsText -Name 'PS-12 拒否理由に項目名が出る' -Needle 'LogDirectory は必須です'
 
     ## PS-13..PS-17 バックアップ -------------------------------------------
     $backupScript = Join-Path $scriptDirectory 'New-DataBackup.ps1'
@@ -249,32 +262,32 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
 }
 "@
     Assert-ExitCode -Name 'PS-13 バックアップのドライランが成功する' -Expected 0 -Path $backupScript -ScriptArguments @('-ConfigPath', $backupConfig)
-    Assert-OutputContains -Name 'PS-13 ドライランと分かる表示が出る' -Needle '[DRY-RUN]'
+    Assert-OutputContainsText -Name 'PS-13 ドライランと分かる表示が出る' -Needle '[DRY-RUN]'
     Assert-True -Name 'PS-13 ドライランはアーカイブを作らない' `
         -Condition (@(Get-ChildItem -LiteralPath $backupDirectory -File).Count -eq 0)
 
     Assert-ExitCode -Name 'PS-14 バックアップの実行が成功する' -Expected 0 -Path $backupScript -ScriptArguments @('-ConfigPath', $backupConfig, '-Execute')
     $archive = Get-ChildItem -LiteralPath $backupDirectory -File -Filter 'test_*.zip' | Select-Object -First 1
     Assert-True -Name 'PS-14 アーカイブが作成される' -Condition ($null -ne $archive -and $archive.Length -gt 0)
-    Assert-OutputContains -Name 'PS-14 アーカイブを読み直して件数を確認している' -Needle '件の項目を確認しました'
+    Assert-OutputContainsText -Name 'PS-14 アーカイブを読み直して件数を確認している' -Needle '件の項目を確認しました'
 
     $backupDangerConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'backup-danger.psd1') -Body @"
 @{ SourceDirectory = '$dangerousPath'; BackupDirectory = '$backupDirectory'; RetentionDays = 7; ArchivePrefix = 'test' }
 "@
     Assert-ExitCode -Name 'PS-15 危険な保存元を終了コード2で拒否する' -Expected 2 -Path $backupScript -ScriptArguments @('-ConfigPath', $backupDangerConfig)
-    Assert-OutputContains -Name 'PS-15 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
+    Assert-OutputContainsText -Name 'PS-15 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
 
     $backupNestedConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'backup-nested.psd1') -Body @"
 @{ SourceDirectory = '$sourceDirectory'; BackupDirectory = '$sourceDirectory/inner'; RetentionDays = 7; ArchivePrefix = 'test' }
 "@
     Assert-ExitCode -Name 'PS-16 保存先が保存元の中なら終了コード2' -Expected 2 -Path $backupScript -ScriptArguments @('-ConfigPath', $backupNestedConfig)
-    Assert-OutputContains -Name 'PS-16 拒否理由を説明している' -Needle 'SourceDirectory の中に置くことはできません'
+    Assert-OutputContainsText -Name 'PS-16 拒否理由を説明している' -Needle 'SourceDirectory の中に置くことはできません'
 
     $backupPrefixConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'backup-prefix.psd1') -Body @"
 @{ SourceDirectory = '$sourceDirectory'; BackupDirectory = '$backupDirectory'; RetentionDays = 7; ArchivePrefix = '../evil' }
 "@
     Assert-ExitCode -Name 'PS-17 接頭辞に使えない文字を終了コード2で拒否する' -Expected 2 -Path $backupScript -ScriptArguments @('-ConfigPath', $backupPrefixConfig)
-    Assert-OutputContains -Name 'PS-17 拒否理由に使える文字を示す' -Needle 'ArchivePrefix には英数字'
+    Assert-OutputContainsText -Name 'PS-17 拒否理由に使える文字を示す' -Needle 'ArchivePrefix には英数字'
 
     ## PS-18..PS-20 ログ保守 -----------------------------------------------
     $logScript = Join-Path $scriptDirectory 'Invoke-LogMaintenance.ps1'
@@ -305,7 +318,7 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
 @{ LogDirectory = '$logDirectory'; ArchiveDirectory = '$archiveDirectory'; CompressAfterDays = 30; DeleteAfterDays = 30 }
 "@
     Assert-ExitCode -Name 'PS-20 削除日数が圧縮日数以下なら終了コード2' -Expected 2 -Path $logScript -ScriptArguments @('-ConfigPath', $logBadConfig)
-    Assert-OutputContains -Name 'PS-20 拒否理由を説明している' -Needle 'DeleteAfterDays'
+    Assert-OutputContainsText -Name 'PS-20 拒否理由を説明している' -Needle 'DeleteAfterDays'
 
     ## PS-21..PS-25 構築 ---------------------------------------------------
     $installScript = Join-Path $scriptDirectory 'Install-WebServer.ps1'
@@ -323,7 +336,7 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
 "@
     $installStatus = Invoke-TargetScript -Path $installScript -ScriptArguments @('-ConfigPath', $webConfig)
     Assert-True -Name 'PS-21 構築のドライランがエラーにならない' -Condition ($installStatus -le 1) -Detail "status=$installStatus"
-    Assert-OutputContains -Name 'PS-21 実行予定の内容が表示される' -Needle '[DRY-RUN]'
+    Assert-OutputContainsText -Name 'PS-21 実行予定の内容が表示される' -Needle '[DRY-RUN]'
     Assert-True -Name 'PS-21 ドライランはファイルを作らない' `
         -Condition (-not (Test-Path -LiteralPath (Join-Path $webRoot 'index.html')))
 
@@ -331,24 +344,24 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
 @{ FeatureName = 'Web-Server'; ServiceName = 'W3SVC'; WebRoot = '$webRoot'; SiteTitle = 'Test Site'; HttpPort = 70000 }
 "@
     Assert-ExitCode -Name 'PS-22 範囲外のポートを終了コード2で拒否する' -Expected 2 -Path $installScript -ScriptArguments @('-ConfigPath', $webBadPortConfig)
-    Assert-OutputContains -Name 'PS-22 拒否理由に範囲が書かれている' -Needle '1 から 65535 の範囲'
+    Assert-OutputContainsText -Name 'PS-22 拒否理由に範囲が書かれている' -Needle '1 から 65535 の範囲'
 
     $webMissingConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'websetup-missing.psd1') -Body @"
 @{ ServiceName = 'W3SVC'; WebRoot = '$webRoot'; SiteTitle = 'Test Site' }
 "@
     Assert-ExitCode -Name 'PS-23 必須設定が無ければ終了コード2' -Expected 2 -Path $installScript -ScriptArguments @('-ConfigPath', $webMissingConfig)
-    Assert-OutputContains -Name 'PS-23 拒否理由に項目名が出る' -Needle 'FeatureName は必須です'
+    Assert-OutputContainsText -Name 'PS-23 拒否理由に項目名が出る' -Needle 'FeatureName は必須です'
 
     $webDangerConfig = New-TestConfig -Path (Join-Path $temporaryRoot 'websetup-danger.psd1') -Body @"
 @{ FeatureName = 'Web-Server'; ServiceName = 'W3SVC'; WebRoot = '$dangerousPath'; SiteTitle = 'Test Site' }
 "@
     Assert-ExitCode -Name 'PS-24 危険な配置先を終了コード2で拒否する' -Expected 2 -Path $installScript -ScriptArguments @('-ConfigPath', $webDangerConfig)
-    Assert-OutputContains -Name 'PS-24 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
+    Assert-OutputContainsText -Name 'PS-24 拒否理由を説明している' -Needle '重要なシステムディレクトリ'
 
     if (-not $IsWindows) {
         Assert-ExitCode -Name 'PS-25 Windows以外での -Execute を終了コード2で拒否する' -Expected 2 `
             -Path $installScript -ScriptArguments @('-ConfigPath', $webConfig, '-Execute')
-        Assert-OutputContains -Name 'PS-25 拒否理由を説明している' -Needle 'Windowsでのみ実行できます'
+        Assert-OutputContainsText -Name 'PS-25 拒否理由を説明している' -Needle 'Windowsでのみ実行できます'
     }
     else {
         Write-TestPass -Name 'PS-25 OS判定テストはこの環境では対象外(Windows)'
@@ -370,7 +383,7 @@ Write-OpsLog -Level WARN -Message "1行目`n2行目`tタブ"
 }
 "@
     Assert-ExitCode -Name 'PS-27 未構築のサーバーには警告終了する' -Expected 1 -Path $verifyScript -ScriptArguments @('-ConfigPath', $verifyNeverConfig)
-    Assert-OutputContains -Name 'PS-27 配布ファイルの不足を説明している' -Needle '配布ファイルが見つかりません'
+    Assert-OutputContainsText -Name 'PS-27 配布ファイルの不足を説明している' -Needle '配布ファイルが見つかりません'
 
     ## PS-28 証跡化との連携 ------------------------------------------------
     if (Get-Command python3 -ErrorAction SilentlyContinue) {

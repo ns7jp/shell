@@ -31,7 +31,7 @@
 | 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 |
 | Ansible等による構成管理の再現性 | NOT RUN | [構築ロードマップ](10-server-build-roadmap.md)のPhase 2相当、未着手 |
 | PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象6ファイル、`make ps-syntax` 終了0 |
-| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 58/58成功、終了0、追加モジュール不要 |
+| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 60/60成功、終了0、追加モジュール不要 |
 | PowerShell点検スクリプトの実行 | PASS | 2026-09-03、Linux上で `Invoke-ServerAudit.ps1` 実行、Windows専用コマンド不在の2項目をWARN、終了1 |
 | PowerShellログのJSON証跡化 | PASS | 2026-09-03、既存の `audit_report.py` を無改修で再利用、`result=WARN`、終了1 |
 | PowerShell構築スクリプトのドライラン | PASS | 2026-09-03、`Install-WebServer.ps1`（`-Execute` なし）でファイル未作成を確認、終了1（環境依存の警告3件） |
@@ -45,7 +45,9 @@
 | Windows再起動後のサービス自動起動 | NOT RUN | 再起動をまたぐ確認は実機VMが必要 |
 | ファイアウォール許可後の別端末からの到達性 | NOT RUN | 2台以上のネットワーク環境が必要 |
 | タスクスケジューラでの定期実行 | NOT RUN | 登録スクリプトは本パックに含めていない |
-| GitHub ActionsのPowerShellジョブ（Linux/Windows） | NOT RUN | ワークフローを追加した時点では未実行。初回実行後に結果を追記すること |
+| GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、構文チェックと自動テストが成功。初回はPSScriptAnalyzerが`PSUseSingularNouns`を1件指摘したため関数名を修正 |
+| GitHub ActionsのPowerShellジョブ（windows-latest） | PASS（修正後） | 2026-09-03、初回は56件中2件失敗（PS-16）。パス区切りの混在で安全検査がすり抜ける不具合を修正し、回帰テストPS-30を追加 |
+| PSScriptAnalyzer（CI上） | PASS（修正後） | 2026-09-03、ubuntu-latestで実行。指摘1件を修正済み。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
 
 ## ローカル検証記録
 
@@ -151,7 +153,7 @@ evidence: scripts/powershell と tests/powershell の6ファイルすべてで�
 command: pwsh -NoProfile -File tests/powershell/Run-PowerShellTests.ps1
 exit code: 0
 result: PASS
-evidence: pass=58 fail=0。追加モジュール（Pester等）のインストールなしで完走。
+evidence: pass=60 fail=0。追加モジュール（Pester等）のインストールなしで完走。
   Windows専用の確認を含むPS-07・PS-25は、この環境では実行対象（Linux側）として通過。
 
 command: pwsh -NoProfile -File scripts/powershell/Invoke-ServerAudit.ps1 --ConfigPath ... --OutputPath audit.log
@@ -204,3 +206,24 @@ evidence: 検証環境からPowerShell Galleryへ到達できず（プロキシ�
 この結果は**Linux上のPowerShell 7による検証**です。Windows Server実機でのIIS導入、サービスの自動起動、ファイアウォール規則の作成と到達性は確認できていません。上の台帳で `NOT RUN` と明記しています。
 
 Windows専用コマンドが存在しない環境で警告になる項目は、[25. テスト仕様](25-powershell-test-plan.md)の `NOT RUN` 表と対応しています。**「Linuxで動いた」ことを「Windowsで動く」と書き換えないでください。**
+
+### CIで見つかった不具合（2026-09-03）
+
+Windows実機を持っていなくても、CIのwindows-latestジョブがあれば見つけられる不具合がありました。記録として残します。
+
+```text
+症状: PS-16「保存先が保存元の中なら終了コード2」がWindowsでだけ失敗（実際は終了0）
+原因: 設定に C:\...\source/inner のように区切り文字が混在していると、
+      Assert-OpsSafePath が正規化していなかったため、New-DataBackup.ps1 の
+      「保存先が保存元の配下か」という文字列比較がすり抜けていた。
+      Windowsは \ と / の両方を区切りとして受け付けるため、Linuxでは再現しない。
+影響: 安全機構（フェイルクローズ）が働かず、保存先を保存元の中に置けてしまう。
+修正: Assert-OpsSafePath で、Windowsのときに / を \ へそろえてから判定するようにした。
+回帰テスト: PS-30 を追加（両OSで、区切り文字と末尾がOSの形にそろうことを確認）。
+
+症状: PSScriptAnalyzer が PSUseSingularNouns を1件指摘（ubuntu-latest）
+原因: テスト用関数 Assert-OutputContains の名詞が複数形と判定された。
+修正: Assert-OutputContainsText に改名。規則の除外は増やしていない。
+```
+
+**Linuxだけで検証していたら、どちらも見逃していました。** 「両方のOSでCIを回す」ことの効果が実際に出た例です。
