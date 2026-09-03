@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# 誤答例: 書式を自作しているため不合格になります。
+set -Eeuo pipefail
+
+source "${LAB_COMMON:?LAB_COMMON が未設定です}"
+
+printf '%s [INFO] こんにちは\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')"

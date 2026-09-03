@@ -19,3 +19,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y shellcheck
           make lint
+
+  exercise-pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck
+      - name: Lint exercise pack
+        run: make lab-lint
+      - name: Self-check the grader
+        run: make lab-selfcheck

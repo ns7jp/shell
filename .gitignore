@@ -8,3 +8,9 @@ config/*.conf
 !config/*.conf.example
 audit.log
 audit.json
+
+# 演習パックの作業場（誤ってリポジトリ内で作業した場合の保険）
+bash-lab/
+# 上の *.log / *.tar.gz に演習用の教材が飲み込まれないようにします
+!exercises/fixtures/**
+!exercises/answers/**

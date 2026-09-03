@@ -3,3 +3,6 @@
 Makefile text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+*.tmpl text eol=lf
+*.tsv text eol=lf
+*.md text eol=lf

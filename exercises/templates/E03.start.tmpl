@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# @LAB_ID@ @LAB_TITLE@
+set -Eeuo pipefail
+
+# この source の行は消さないでください。共通ライブラリ（log / die など）を借ります。
+source "${LAB_COMMON:?LAB_COMMON が未設定です。source \"$HOME/bash-lab/labenv.sh\" を実行してください}"
+
+# TODO: この行を、log を使って「こんにちは」を1行出す処理に置き換えます。
