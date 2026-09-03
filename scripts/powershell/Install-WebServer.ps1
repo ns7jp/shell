@@ -111,9 +111,24 @@ if (Test-OpsCommand -Name 'Get-WindowsFeature') {
     }
 }
 elseif (Test-OpsCommand -Name 'Enable-WindowsOptionalFeature') {
-    Write-OpsLog -Level INFO -Message "クライアントOS向けの手順で役割を有効化します: IIS-WebServerRole"
-    Invoke-OpsAction -Execute $Execute -Description 'Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole -All -NoRestart' -Action {
-        Enable-WindowsOptionalFeature -Online -FeatureName 'IIS-WebServerRole' -All -NoRestart | Out-Null
+    # クライアントOS(Windows 10/11)でも、Server側と同じように
+    # 「今の状態を見てから、必要なときだけ変える」形にします(冪等性)。
+    $featureState = $null
+    try {
+        $featureState = Get-WindowsOptionalFeature -Online -FeatureName 'IIS-WebServerRole' -ErrorAction SilentlyContinue
+    }
+    catch {
+        $featureState = $null
+    }
+
+    if ($featureState -and $featureState.State -eq 'Enabled') {
+        Write-OpsLog -Level OK -Message '役割は導入済みです: IIS-WebServerRole'
+    }
+    else {
+        Write-OpsLog -Level INFO -Message 'クライアントOS向けの手順で役割を有効化します: IIS-WebServerRole'
+        Invoke-OpsAction -Execute $Execute -Description 'Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole -All -NoRestart' -Action {
+            Enable-WindowsOptionalFeature -Online -FeatureName 'IIS-WebServerRole' -All -NoRestart | Out-Null
+        }
     }
 }
 else {

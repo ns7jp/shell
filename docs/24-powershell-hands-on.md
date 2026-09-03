@@ -87,6 +87,12 @@ Get-Help Test-Path -Examples             # 使い方の実例を見る
 Get-ChildItem . | Get-Member             # 返ってきたモノに何が入っているか見る
 ```
 
+`Get-Help Test-Path -Examples` を実行しても実例が出ない場合は、PowerShell 7にヘルプファイルがまだ入っていません。最初に一度だけ次を実行してください（インターネット接続が必要です）。取得できない環境では `Get-Help Test-Path -Online` で公式ページをブラウザーで開けます。
+
+```powershell
+Update-Help -Scope CurrentUser -ErrorAction SilentlyContinue
+```
+
 問い: `Get-Command *-Ops*` は何も返らないはずです。なぜでしょうか。`OpsCommon` モジュールをまだ読み込んでいないからです。次のように読み込むと見えます。
 
 ```powershell
@@ -98,11 +104,19 @@ Get-Command *-Ops*
 
 Bashでは `df` や `ls` の**文字列**を `awk` で切り出します。PowerShellが渡すのは**オブジェクト**なので、表示が変わっても壊れません。
 
+まず、大きさの違うファイルを3つ用意します。
+
+```powershell
+Set-Content -LiteralPath C:\ops-lab\source\a.txt -Value 'aaaa'
+Set-Content -LiteralPath C:\ops-lab\source\b.txt -Value 'bbbbbbbbbb'
+Set-Content -LiteralPath C:\ops-lab\source\c.txt -Value 'c'
+```
+
 ```powershell
 Get-ChildItem C:\ops-lab\source -File | Where-Object { $_.Length -gt 2 } | Sort-Object -Property Length -Descending | Select-Object -Property Name, Length
 ```
 
-実行例（練習用に3ファイルを置いた場合）:
+実行例（Linuxで実行した場合）:
 
 ```text
 Name  Length
@@ -110,6 +124,10 @@ Name  Length
 b.txt     11
 a.txt      5
 ```
+
+`c.txt` だけが `-gt 2` の条件から外れて消えていることを確認してください。
+
+**表示されるバイト数は、みなさんの環境と1〜2バイトずれることがあります。** `Set-Content` は行末に改行を足しますが、その改行がWindowsでは2バイト（CR+LF）、Linux/macOSでは1バイト（LF）だからです。上の例はLinuxでの結果なので、Windowsでは `a.txt` が6、`b.txt` が12になります。**数字を暗記するのではなく、「大きい順に並び、小さいものが除かれる」ことを確認してください。**
 
 `$_` は「パイプで今流れてきた1件」を指します。`Where-Object`（絞る）→ `Sort-Object`（並べる）→ `Select-Object`（列を選ぶ）は、この順で読めば日本語の文になります。
 
@@ -223,6 +241,13 @@ pwsh -NoProfile -File scripts/powershell/Install-WebServer.ps1 -ConfigPath "$HOM
 ## 演習9: 実際に構築する（Windowsのみ・使い捨て環境で）
 
 > **本番サーバーや共有マシンでは絶対に実行しないでください。** スナップショットを取った検証用VMで行います。
+
+まず、構築と受け入れ試験で共用する設定ファイルを用意します（演習10と[26. 運用・障害対応手順](26-powershell-operations-runbook.md)でも同じファイルを使います）。
+
+```powershell
+Copy-Item .\config\powershell\websetup.psd1.example C:\ops-lab\websetup.psd1
+notepad C:\ops-lab\websetup.psd1   # Windowsなら既定値のままで構いません。値を目で確認します
+```
 
 ```powershell
 # 「管理者として実行」したPowerShell 7で

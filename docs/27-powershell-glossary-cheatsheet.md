@@ -126,6 +126,14 @@ Windows専用のコマンドが無い環境では、サービスもファイア�
 
 > **合言葉: 「あるか・つかいかた・なかみ」**
 
+`Get-Help ... -Examples` を実行しても実例が出ない場合は、PowerShell 7にヘルプファイルが入っていません。最初に一度だけ次を実行します（インターネット接続が必要です）。
+
+```powershell
+Update-Help -Scope CurrentUser -ErrorAction SilentlyContinue
+```
+
+取得できない環境では、`Get-Help Test-Path -Online` でブラウザーの公式ページを開けます。
+
 このリポジトリのスクリプトにも説明が入っています。
 
 ```powershell
@@ -228,8 +236,14 @@ Get-FileHash PATH                               # 中身が同じか比べる材
 $LASTEXITCODE                                   # 直前の外部プログラムの終了コード
 ```
 
-インターネットから取得したスクリプトが実行できないときは、ブロックの印が付いていることがあります。**中身を読んで納得してから**解除してください。
+インターネットから取得したスクリプトが実行できないときは、ブロックの印が付いていることがあります。**中身を読んで納得してから**、そのファイルだけを解除してください。
 
 ```powershell
-Get-ChildItem -Recurse -Include *.ps1, *.psm1, *.psd1 | Unblock-File
+Unblock-File -LiteralPath .\scripts\powershell\Invoke-ServerAudit.ps1
+```
+
+まとめて解除するときも、**自分が中身を確認したリポジトリの中だけ**に対象を限定します。カレントディレクトリ全体を再帰的に解除すると、ダウンロードフォルダーなど意図しない場所まで安全策を外してしまいます。
+
+```powershell
+Get-ChildItem .\scripts\powershell -Recurse -Include *.ps1, *.psm1 | Unblock-File
 ```

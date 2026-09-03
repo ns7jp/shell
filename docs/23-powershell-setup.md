@@ -95,6 +95,13 @@ Copy-Item config\powershell\backup.psd1.example C:\ops-lab\backup.psd1
 notepad C:\ops-lab\backup.psd1   # SourceDirectory と BackupDirectory を C:\ops-lab\... に書き換える
 ```
 
+[24. ハンズオン](24-powershell-hands-on.md)では、点検用と構築用の設定ファイルも使います。同じ要領で先に用意しておくと、演習を止めずに進められます。
+
+```powershell
+Copy-Item config\powershell\audit.psd1.example    C:\ops-lab\audit.psd1
+Copy-Item config\powershell\websetup.psd1.example C:\ops-lab\websetup.psd1
+```
+
 書き換えたら、**まずドライラン**です。表示されたパスが意図どおりのときだけ `-Execute` を付けます。
 
 ```powershell

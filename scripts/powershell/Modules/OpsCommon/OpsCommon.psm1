@@ -88,7 +88,7 @@ function Write-OpsLog {
     $line = '{0} [{1}] {2}' -f (Get-OpsTimestamp), $Level, $flatMessage
 
     # ここで Write-Output を使ってはいけません。ログ行が「関数の戻り値」として
-    # パイプラインに流れ込み、呼び出し側の判定を壊します(docs/24 の演習6で再現します)。
+    # パイプラインに流れ込み、呼び出し側の判定を壊します(docs/24 の演習7で再現します)。
     # [Console] へ直接書けば、画面には出るのにパイプラインは汚しません。
     if ($Level -eq 'ERROR') {
         [Console]::Error.WriteLine($line)
