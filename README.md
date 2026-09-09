@@ -15,6 +15,7 @@
 | PowerShell演習パック | WindowsへのIIS構築と、その後の運用 | PowerShell 7 | [20](docs/20-powershell-project-overview.md)〜[27](docs/27-powershell-glossary-cheatsheet.md) |
 | Ansible構成管理パック | 構築パックと同じ内容をAnsibleで再現可能に構築 | Ansible (YAML) | [30](docs/30-ansible-project-overview.md)〜[33](docs/33-ansible-test-plan.md) |
 | セキュリティ強化パック | 専用ユーザー、SSH、sudo、FW、更新方針、権限表 | Bash + Ansible | [40](docs/40-security-project-overview.md)〜[43](docs/43-security-test-plan.md) |
+| 変更管理・復旧パック | 変更前スナップショット、変更適用、検証ゲート、自動切戻し、復元試験 | Bash | [50](docs/50-change-project-overview.md)〜[53](docs/53-change-test-plan.md) |
 
 | スクリプト | 目的 | 通常の変更 | 安全策 |
 |---|---|---:|---|
@@ -22,6 +23,9 @@
 | `build_verify.sh` | 構築直後にパッケージ・サービス・HTTP応答・ファイアウォールを確認 | なし | 読み取り専用 |
 | `harden_server.sh` | 専用ユーザー作成、SSH鍵登録、sudoers drop-in、ufw既定拒否+許可リスト、自動更新導入 | あり | 既定はドライラン、`--execute`にroot権限必須、sudoers drop-inは配置前に`visudo -c`で構文検証 |
 | `verify_hardening.sh` | 強化直後にSSH root無効化・パスワード認証無効化・sudoers構文・ufw既定拒否+許可・専用ユーザーを確認 | なし | 読み取り専用 |
+| `snapshot_config.sh` | 変更前の設定状態（複数の絶対パス）をタイムスタンプ付きで保存 | あり | 既定はドライラン、チェックサム付きマニフェストを作成 |
+| `change_deploy.sh` | スナップショット→変更適用→既存の受け入れ試験による検証ゲート→不合格時は自動切戻し | あり | 既定はドライラン、`--execute`にroot権限必須、削除同期はしない |
+| `restore_config.sh` | 指定したスナップショットを元の絶対パスへ復元し、復元後にチェックサムで一致を確認 | あり | 既定はドライラン、`--execute`にroot権限必須、cp成功だけで完了とみなさない |
 | `server_audit.sh` | OS、CPU、メモリ、ディスク、サービスを点検 | なし | 読み取り専用 |
 | `backup.sh` | 指定ディレクトリを世代付きで圧縮保存 | あり | 既定はドライラン、入力検証、保存先分離 |
 | `rotate_app_logs.sh` | 古いアプリログを圧縮・削除 | あり | 既定はドライラン、対象拡張子・経過日数を限定 |
@@ -141,6 +145,10 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 30. [セキュリティ強化の基本設計](docs/41-security-design.md)で最小権限と既定拒否の設計理由を理解する
 31. [セキュリティ強化ハンズオン](docs/42-security-hands-on.md)で検証環境に実際に強化設定を適用する
 32. [セキュリティ強化テスト仕様](docs/43-security-test-plan.md)で自動テストとNOT RUNを確認する
+33. [変更管理・復旧案件概要](docs/50-change-project-overview.md)で変更手順・切戻し条件という依頼と`backup.sh`との違いをつかむ
+34. [変更管理・復旧の基本設計](docs/51-change-design.md)で切戻し基準表と復元試験の設計理由を理解する
+35. [変更管理・復旧ハンズオン](docs/52-change-hands-on.md)で検証環境に実際にスナップショット・変更・自動切戻しを試す
+36. [変更管理・復旧テスト仕様](docs/53-change-test-plan.md)で自動テストとNOT RUNを確認する
 
 ## ディレクトリ構成
 
