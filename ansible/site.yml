@@ -7,3 +7,13 @@
   become: true
   roles:
     - web_server
+
+# セキュリティ強化パック（専用ユーザー、SSH鍵認証化、sudoers drop-in、
+# ufw既定拒否+許可リスト、自動更新）は、意図的に別プレイに分けています。
+# 「構築」と「強化」を1つの巨大なプレイにまとめると、どちらか一方だけを
+# 適用・確認したい場合（--tags や --limit での切り分け）が難しくなるためです。
+- name: サーバーをセキュリティ強化する（セキュリティパック）
+  hosts: web
+  become: true
+  roles:
+    - security_hardening

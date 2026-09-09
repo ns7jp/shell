@@ -14,11 +14,14 @@
 | 構築パック | LinuxへのNginx構築と受け入れ試験 | Bash + Python | [11](docs/11-build-project-overview.md)〜[14](docs/14-build-test-plan.md) |
 | PowerShell演習パック | WindowsへのIIS構築と、その後の運用 | PowerShell 7 | [20](docs/20-powershell-project-overview.md)〜[27](docs/27-powershell-glossary-cheatsheet.md) |
 | Ansible構成管理パック | 構築パックと同じ内容をAnsibleで再現可能に構築 | Ansible (YAML) | [30](docs/30-ansible-project-overview.md)〜[33](docs/33-ansible-test-plan.md) |
+| セキュリティ強化パック | 専用ユーザー、SSH、sudo、FW、更新方針、権限表 | Bash + Ansible | [40](docs/40-security-project-overview.md)〜[43](docs/43-security-test-plan.md) |
 
 | スクリプト | 目的 | 通常の変更 | 安全策 |
 |---|---|---:|---|
 | `provision_web_server.sh` | Nginx導入、サンプルページ配置、ファイアウォール、systemd登録 | あり | 既定はドライラン、`--execute`にroot権限必須、冪等に実行 |
 | `build_verify.sh` | 構築直後にパッケージ・サービス・HTTP応答・ファイアウォールを確認 | なし | 読み取り専用 |
+| `harden_server.sh` | 専用ユーザー作成、SSH鍵登録、sudoers drop-in、ufw既定拒否+許可リスト、自動更新導入 | あり | 既定はドライラン、`--execute`にroot権限必須、sudoers drop-inは配置前に`visudo -c`で構文検証 |
+| `verify_hardening.sh` | 強化直後にSSH root無効化・パスワード認証無効化・sudoers構文・ufw既定拒否+許可・専用ユーザーを確認 | なし | 読み取り専用 |
 | `server_audit.sh` | OS、CPU、メモリ、ディスク、サービスを点検 | なし | 読み取り専用 |
 | `backup.sh` | 指定ディレクトリを世代付きで圧縮保存 | あり | 既定はドライラン、入力検証、保存先分離 |
 | `rotate_app_logs.sh` | 古いアプリログを圧縮・削除 | あり | 既定はドライラン、対象拡張子・経過日数を限定 |
@@ -134,6 +137,10 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 26. [Ansibleの基本設計](docs/31-ansible-design.md)でBash版との対応関係と冪等性の根拠を理解する
 27. [Ansibleハンズオン](docs/32-ansible-hands-on.md)で構文チェックと初期VMへの適用の流れを確認する
 28. [Ansibleテスト仕様](docs/33-ansible-test-plan.md)で自動テストとNOT RUNを確認する
+29. [セキュリティ強化案件概要](docs/40-security-project-overview.md)で専用ユーザー・SSH・sudo・FWという依頼と権限表をつかむ
+30. [セキュリティ強化の基本設計](docs/41-security-design.md)で最小権限と既定拒否の設計理由を理解する
+31. [セキュリティ強化ハンズオン](docs/42-security-hands-on.md)で検証環境に実際に強化設定を適用する
+32. [セキュリティ強化テスト仕様](docs/43-security-test-plan.md)で自動テストとNOT RUNを確認する
 
 ## ディレクトリ構成
 

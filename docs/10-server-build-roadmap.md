@@ -81,6 +81,27 @@ Windows側を扱う3つ目のパックとして、**PowerShell演習案件パッ
 
 実施記録の詳細は[検証証跡](08-evidence.md)を参照してください。
 
+## この続きとして実装した内容（2026-09-09 追加・セキュリティ）
+
+下表の優先度2「セキュリティ」（専用ユーザー、SSH、sudo、FW、更新方針、権限表）について、Phase 1相当（手作業で理解できる範囲の設計とスクリプト・ロール実装）まで実装しました。詳細は次を参照してください。
+
+- [セキュリティ強化案件概要](40-security-project-overview.md)
+- [セキュリティ強化の基本設計](41-security-design.md)
+- [セキュリティ強化ハンズオン](42-security-hands-on.md)
+- [セキュリティ強化テスト仕様](43-security-test-plan.md)
+
+実装したのは、`scripts/harden_server.sh`（専用ユーザー作成、SSH鍵登録、sudoers drop-in、ufw既定拒否+許可リスト、自動更新導入をドライラン既定・冪等に実行）、`scripts/verify_hardening.sh`（強化直後の受け入れ試験）、`config/hardening.conf.example`、および同じ構成内容をAnsibleで再現する`ansible/roles/security_hardening/`（`ansible/site.yml`に2つ目のプレイとして追加）です。ログ形式を既存のスクリプト群と統一したため、証跡化には新しいPythonスクリプトを作らず、既存の`scripts/audit_report.py`をそのまま再利用しています。
+
+検証はこの検証環境（コンテナ）での自動テスト（一時ディレクトリのみを使用し、実システムのSSH・sudo・ufw設定は一切変更していません）、YAML構文検証、`ansible-lint`、実際の`visudo -cf`によるsudoers構文検証までで確認できました。次はまだ未実施です。
+
+- 実Ubuntu VMでの`harden_server.sh --execute`実行と、ユーザー作成・SSH・sudoers・ufw・自動更新設定の反映確認
+- SSHのroot無効化・パスワード認証無効化後に、別セッションから実際に鍵ログインできることの確認（締め出しの実地検証）
+- Ansible版（`ansible-playbook`）による実VMへの適用と、2回目適用時の冪等性確認（[30. Ansible構成管理案件概要](30-ansible-project-overview.md)と同じ理由でこの検証環境にAnsible実行基盤が無いため）
+- ufwの実環境でのポート到達性確認
+- sudoコマンド単位への権限絞り込み、多要素認証、侵入検知など、[41. セキュリティ強化の基本設計](41-security-design.md)の「残るリスク」に記載した範囲
+
+実施記録の詳細は[検証証跡](08-evidence.md)を参照してください。
+
 ## 現在すでに示せていること
 
 | 観点 | 現在の成果物 |
@@ -111,7 +132,7 @@ Windows側を扱う3つ目のパックとして、**PowerShell演習案件パッ
 | 2 | Windowsのアカウント・権限管理 | ローカル/ADアカウントの棚卸し、共有フォルダーのNTFS権限と共有権限の設計 | 最小権限と、実効権限が「厳しいほう」に従う理由を説明できる |
 | 2 | Windowsの定期実行 | タスクスケジューラ登録、実行ユーザー、多重起動防止、失敗通知 | 異常を誰がどう検知するか説明できる |
 
-上表のうち「OS・ネットワークの構築」「ミドルウェア構築」「構築テスト」は、[構築案件概要](11-build-project-overview.md)以降の実装で最小構成（Phase 1相当）まで到達しました。Windows側についても[PowerShell演習案件概要](20-powershell-project-overview.md)以降で同じ範囲を実装しています（ただしWindows実機での実行は `NOT RUN`）。「構成の再現性(Ansible)」は、[Ansible構成管理案件概要](30-ansible-project-overview.md)以降の実装でPhase 2の一部（プレイブックとロールの実装、変数分離、`build_verify.sh`の再利用）まで到達しましたが、実Ubuntu VMへの適用と2回目適用時の冪等性確認は、この検証環境にAnsible実行基盤（Galaxyへ到達できる制御ノード）が無いため `NOT RUN` です。それ以外の項目（セキュリティ、監視と定期実行、性能・可用性、クラウドまたはIaC）は、まだ未着手です。
+上表のうち「OS・ネットワークの構築」「ミドルウェア構築」「構築テスト」は、[構築案件概要](11-build-project-overview.md)以降の実装で最小構成（Phase 1相当）まで到達しました。Windows側についても[PowerShell演習案件概要](20-powershell-project-overview.md)以降で同じ範囲を実装しています（ただしWindows実機での実行は `NOT RUN`）。「構成の再現性(Ansible)」は、[Ansible構成管理案件概要](30-ansible-project-overview.md)以降の実装でPhase 2の一部（プレイブックとロールの実装、変数分離、`build_verify.sh`の再利用）まで到達しましたが、実Ubuntu VMへの適用と2回目適用時の冪等性確認は、この検証環境にAnsible実行基盤（Galaxyへ到達できる制御ノード）が無いため `NOT RUN` です。「セキュリティ」は、[セキュリティ強化案件概要](40-security-project-overview.md)以降の実装で、専用ユーザー・SSH鍵認証化・sudoers drop-in・ufw既定拒否+許可リスト・自動更新方針・権限表という設計とスクリプト・ロールの実装まで到達しましたが、実Ubuntu VMへの適用と実際のSSH再ログイン確認は`NOT RUN`です。それ以外の項目（変更・復旧、監視と定期実行、性能・可用性、クラウドまたはIaC）は、まだ未着手です。
 
 Windows側で追加した2行（アカウント・権限管理、定期実行）は、日本の情シス・運用保守の求人で頻出する業務です。**ただし、アカウントの無効化やACLの一括変更は影響範囲が大きいため、着手するときも「検出と報告まで」にとどめ、変更は人の承認を経る設計にしてください。**
 

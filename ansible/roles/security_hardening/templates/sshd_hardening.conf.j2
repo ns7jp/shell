@@ -1,0 +1,10 @@
+# Ansible（security_hardening role）が生成しました。手動編集せず、
+# ansible/roles/security_hardening/defaults/main.yml を書き換えて再適用してください。
+# 適用後は必ず 'sshd -t' で検証し、'systemctl reload sshd' で反映してください
+# （このロールはsshdの再起動・再読込を行いません。ハンドラーで明示的に呼び出す設計にしていません）。
+Port {{ security_hardening_ssh_port }}
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+ChallengeResponseAuthentication no
+AllowUsers {{ security_hardening_admin_user }}
