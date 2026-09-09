@@ -1,0 +1,46 @@
+---
+# scripts/provision_web_server.sh と同じ4工程（パッケージ導入、サンプルページ配置、
+# ufw許可、systemd登録）を、シェルコマンドではなく専用モジュールで実装します。
+# apt/template/ufw/systemdの各モジュールは、対象がすでに望ましい状態なら
+# 「何もしない（changed=false）」を返すため、素の作りで冪等になります。
+
+- name: パッケージを導入する（apt）
+  ansible.builtin.apt:
+    name: "{{ web_server_package_name }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: 配布用ディレクトリが存在することを確認する
+  ansible.builtin.file:
+    path: "{{ web_server_web_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: サンプルページを配置する（テンプレート）
+  ansible.builtin.template:
+    src: index.html.j2
+    dest: "{{ web_server_web_root }}/index.html"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: 許可するTCPポートをufwで開放する
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ web_server_allowed_tcp_ports }}"
+
+- name: ufwを有効化する
+  community.general.ufw:
+    state: enabled
+
+- name: サービスを有効化・起動する（systemd）
+  ansible.builtin.systemd:
+    name: "{{ web_server_service_name }}"
+    enabled: true
+    state: started

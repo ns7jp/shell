@@ -1,0 +1,5 @@
+---
+- name: Reload nginx
+  ansible.builtin.systemd:
+    name: "{{ web_server_service_name }}"
+    state: reloaded

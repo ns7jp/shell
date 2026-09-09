@@ -13,6 +13,7 @@
 | 運用パック | 構築済みLinuxサーバーの点検・バックアップ・ログ保守 | Bash + Python | [00](docs/00-project-overview.md)〜[09](docs/09-glossary-cheatsheet.md) |
 | 構築パック | LinuxへのNginx構築と受け入れ試験 | Bash + Python | [11](docs/11-build-project-overview.md)〜[14](docs/14-build-test-plan.md) |
 | PowerShell演習パック | WindowsへのIIS構築と、その後の運用 | PowerShell 7 | [20](docs/20-powershell-project-overview.md)〜[27](docs/27-powershell-glossary-cheatsheet.md) |
+| Ansible構成管理パック | 構築パックと同じ内容をAnsibleで再現可能に構築 | Ansible (YAML) | [30](docs/30-ansible-project-overview.md)〜[33](docs/33-ansible-test-plan.md) |
 
 | スクリプト | 目的 | 通常の変更 | 安全策 |
 |---|---|---:|---|
@@ -129,10 +130,15 @@ printf 'audit=%s report=%s\n' "$audit_status" "$report_status"
 22. [PowerShell演習のテスト仕様](docs/25-powershell-test-plan.md)で自動テストとNOT RUNを確認する
 23. [PowerShell運用・障害対応手順](docs/26-powershell-operations-runbook.md)でWindowsの切り分けを練習する
 24. [PowerShell用語集・チートシート](docs/27-powershell-glossary-cheatsheet.md)で合言葉6つと対応表を暗記する
+25. [Ansible構成管理案件概要](docs/30-ansible-project-overview.md)で構成の再現性という依頼をつかむ
+26. [Ansibleの基本設計](docs/31-ansible-design.md)でBash版との対応関係と冪等性の根拠を理解する
+27. [Ansibleハンズオン](docs/32-ansible-hands-on.md)で構文チェックと初期VMへの適用の流れを確認する
+28. [Ansibleテスト仕様](docs/33-ansible-test-plan.md)で自動テストとNOT RUNを確認する
 
 ## ディレクトリ構成
 
 ```text
+ansible/              Ansible構成管理パック（プレイブック・ロール・在庫例）
 config/               設定例（本番値や秘密情報は置かない）
 config/powershell/    PowerShell用の設定例（.psd1）
 docs/                 要件、設計、構築、テスト、運用、証跡

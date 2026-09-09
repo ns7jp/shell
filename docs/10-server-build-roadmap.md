@@ -59,6 +59,28 @@ Windows側を扱う3つ目のパックとして、**PowerShell演習案件パッ
 
 演習パック自体は基礎技能の習得を目的としており、下表の「構成の再現性(Ansible)」以降の不足を埋めるものではありません。それらは引き続き未着手です。
 
+## この続きとして実装した内容（2026-09-09）
+
+「Phase 2: 自動化して再現性を示す」の入り口として、**Ansible構成管理パック**を追加しました。詳細は次を参照してください。
+
+- [Ansible構成管理案件概要](30-ansible-project-overview.md)
+- [Ansibleの基本設計](31-ansible-design.md)
+- [Ansibleハンズオン](32-ansible-hands-on.md)
+- [Ansibleテスト仕様](33-ansible-test-plan.md)
+
+実装したのは、`ansible/site.yml`と`ansible/roles/web_server/`（tasks/handlers/templates/defaults）です。[構築案件概要](11-build-project-overview.md)の`provision_web_server.sh`と同じ構築内容（nginx導入、サンプルページ配置、ufw許可、systemd登録）を、`apt` / `template` / `ufw` / `systemd`の各Ansibleモジュールで冪等に再実装しました。変数はすべて`roles/web_server/defaults/main.yml`に分離し、秘密情報は保存していません。在庫ファイルの例（`ansible/inventory.example.ini`）にはRFC 5737の文書化専用アドレス（`192.0.2.0/24`）のみを使っています。構築後の受け入れ試験は新しいスクリプトを作らず、既存の`build_verify.sh`と`config/provision.conf.example`をそのまま再利用できるよう、変数名と既定値をそろえてあります。
+
+検証はこの検証環境（コンテナ）で確認できたところまでにとどまり、次はまだ未実施です。
+
+- 実Ubuntu VMへの1回目の適用と、変更内容の記録
+- 2回目の適用による冪等性の確認（`changed=0`）
+- Ansibleで構築したサーバーに対する`build_verify.sh`の実行
+- `ansible-galaxy collection install`によるコレクション（`community.general`）の導入（この検証環境はAnsible Galaxyへのネットワーク到達性が無いため未実施）
+
+`ansible-playbook --syntax-check`は、コレクション未導入のため`community.general.ufw`のモジュール解決で失敗しますが、YAML自体の構文は`yaml.safe_load`で全ファイルの読み込みを確認済みです。`ansible-lint`は変数命名規約の指摘を実際に受けて修正しました。詳細は[33. Ansibleテスト仕様](33-ansible-test-plan.md)を参照してください。
+
+実施記録の詳細は[検証証跡](08-evidence.md)を参照してください。
+
 ## 現在すでに示せていること
 
 | 観点 | 現在の成果物 |
@@ -89,7 +111,7 @@ Windows側を扱う3つ目のパックとして、**PowerShell演習案件パッ
 | 2 | Windowsのアカウント・権限管理 | ローカル/ADアカウントの棚卸し、共有フォルダーのNTFS権限と共有権限の設計 | 最小権限と、実効権限が「厳しいほう」に従う理由を説明できる |
 | 2 | Windowsの定期実行 | タスクスケジューラ登録、実行ユーザー、多重起動防止、失敗通知 | 異常を誰がどう検知するか説明できる |
 
-上表のうち「OS・ネットワークの構築」「ミドルウェア構築」「構築テスト」は、[構築案件概要](11-build-project-overview.md)以降の実装で最小構成（Phase 1相当）まで到達しました。Windows側についても[PowerShell演習案件概要](20-powershell-project-overview.md)以降で同じ範囲を実装しています（ただしWindows実機での実行は `NOT RUN`）。「構成の再現性(Ansible)」を含むそれ以外の項目は、まだ未着手です。
+上表のうち「OS・ネットワークの構築」「ミドルウェア構築」「構築テスト」は、[構築案件概要](11-build-project-overview.md)以降の実装で最小構成（Phase 1相当）まで到達しました。Windows側についても[PowerShell演習案件概要](20-powershell-project-overview.md)以降で同じ範囲を実装しています（ただしWindows実機での実行は `NOT RUN`）。「構成の再現性(Ansible)」は、[Ansible構成管理案件概要](30-ansible-project-overview.md)以降の実装でPhase 2の一部（プレイブックとロールの実装、変数分離、`build_verify.sh`の再利用）まで到達しましたが、実Ubuntu VMへの適用と2回目適用時の冪等性確認は、この検証環境にAnsible実行基盤（Galaxyへ到達できる制御ノード）が無いため `NOT RUN` です。それ以外の項目（セキュリティ、監視と定期実行、性能・可用性、クラウドまたはIaC）は、まだ未着手です。
 
 Windows側で追加した2行（アカウント・権限管理、定期実行）は、日本の情シス・運用保守の求人で頻出する業務です。**ただし、アカウントの無効化やACLの一括変更は影響範囲が大きいため、着手するときも「検出と報告まで」にとどめ、変更は人の承認を経る設計にしてください。**
 

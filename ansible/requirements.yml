@@ -1,0 +1,6 @@
+---
+# ufwモジュール（community.general.ufw）に必要な追加コレクションです。
+# ansible-core本体には含まれないため、事前に取得してください。
+#   ansible-galaxy collection install -r ansible/requirements.yml
+collections:
+  - name: community.general
