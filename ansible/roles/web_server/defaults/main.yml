@@ -1,0 +1,14 @@
+---
+# config/provision.conf.example と同じキー名・同じ既定値をそろえています。
+# Bash版とAnsible版で望ましい状態の定義がずれないようにするためです。
+web_server_package_name: nginx
+web_server_service_name: nginx
+web_server_web_root: /var/www/html
+web_server_site_title: "Sample Portfolio Web Server"
+
+# 空白区切りの文字列ではなく、Ansibleらしくリストで持たせます。
+# 既定値は config/provision.conf.example の ALLOWED_TCP_PORTS="22 80" と同じです。
+web_server_allowed_tcp_ports:
+  - 22
+  - 80
+web_server_http_port: 80

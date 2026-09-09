@@ -179,7 +179,7 @@ python3 scripts/audit_report.py --input build-verify.log --output build-verify.j
 
 この構築パックは[10. サーバー構築ポートフォリオへの発展計画](10-server-build-roadmap.md)の「Phase 1: 手作業で仕組みを理解する」に対応する範囲です。次の観点は本パックの範囲外で、同ロードマップのPhase 2以降に委ねます。
 
-- Ansibleなどの構成管理コードによる自動化と、初期VMからの再現。
+- Ansibleなどの構成管理コードによる自動化と、初期VMからの再現（その後[30. Ansible構成管理案件概要](30-ansible-project-overview.md)以降で着手しました。実VMへの適用は引き続き`NOT RUN`です）。
 - systemd timerやログ通知による継続的な監視。
 - 簡易負荷試験や容量見積りなどの性能試験。
 - Terraformなどによる検証環境そのものの作成（IaC）。

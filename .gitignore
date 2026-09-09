@@ -11,6 +11,8 @@ audit.json
 config/powershell/*.psd1
 !config/powershell/*.psd1.example
 *.zip
+ansible/inventory.ini
+!ansible/inventory.example.ini
 
 # 演習パックの作業場（誤ってリポジトリ内で作業した場合の保険）
 bash-lab/

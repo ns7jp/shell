@@ -1,0 +1,9 @@
+---
+# Webサーバー構築を再現するプレイブックです。
+# scripts/provision_web_server.sh と同じ対象（nginx導入、サンプルページ配置、
+# ufw許可、systemd登録）を、Ansibleのモジュールで冪等に実装しています。
+- name: Webサーバーを構築する（構成の再現性パック）
+  hosts: web
+  become: true
+  roles:
+    - web_server
