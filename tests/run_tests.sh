@@ -304,55 +304,63 @@ else
   not_ok 'snapshot captures expected file into payload with manifest'
 fi
 
-printf 'mutated-content\n' >"$tmp_dir/change_target/index.html"
-assert_status 'restore execute succeeds' 0 bash "$ROOT_DIR/scripts/restore_config.sh" --config "$tmp_dir/change.conf" --snapshot "$snapshot_path" --execute
-if [[ $(cat "$tmp_dir/change_target/index.html") == 'before-change' ]]; then
-  ok 'restore actually restores pre-change content'
-else
-  not_ok 'restore actually restores pre-change content'
-fi
-assert_contains 'restore verifies checksum against snapshot' 'すべて一致しました'
+# restore_config.sh / change_deploy.sh の --execute はroot権限を要求するため、
+# 実際に復元・変更が起きることの確認はroot権限下でのみ行います
+# （provision_web_server.sh・harden_server.shの--executeテストと同じ方針）。
+if [[ $(id -u) -eq 0 ]]; then
+  printf 'mutated-content\n' >"$tmp_dir/change_target/index.html"
+  assert_status 'restore execute succeeds' 0 bash "$ROOT_DIR/scripts/restore_config.sh" --config "$tmp_dir/change.conf" --snapshot "$snapshot_path" --execute
+  if [[ $(cat "$tmp_dir/change_target/index.html") == 'before-change' ]]; then
+    ok 'restore actually restores pre-change content'
+  else
+    not_ok 'restore actually restores pre-change content'
+  fi
+  assert_contains 'restore verifies checksum against snapshot' 'すべて一致しました'
 
-# change_deploy: 成功する検証ゲート（VERIFY_CMD=true）で変更が確定すること
-printf 'before-change\n' >"$tmp_dir/change_target/index.html"
-assert_status 'change_deploy execute with passing gate succeeds' 0 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change.conf" --source "$tmp_dir/change_source" --execute
-if [[ $(cat "$tmp_dir/change_target/index.html") == 'after-change' ]]; then
-  ok 'change_deploy applies change on passing gate'
-else
-  not_ok 'change_deploy applies change on passing gate'
-fi
+  # change_deploy: 成功する検証ゲート（VERIFY_CMD=true）で変更が確定すること
+  printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+  assert_status 'change_deploy execute with passing gate succeeds' 0 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change.conf" --source "$tmp_dir/change_source" --execute
+  if [[ $(cat "$tmp_dir/change_target/index.html") == 'after-change' ]]; then
+    ok 'change_deploy applies change on passing gate'
+  else
+    not_ok 'change_deploy applies change on passing gate'
+  fi
 
-# change_deploy: 失敗する検証ゲート（終了コード2）で自動的に切戻ること
-printf 'before-change\n' >"$tmp_dir/change_target/index.html"
-cat >"$tmp_dir/change_fail.conf" <<EOF
+  # change_deploy: 失敗する検証ゲート（終了コード2）で自動的に切戻ること
+  printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+  cat >"$tmp_dir/change_fail.conf" <<EOF
 SNAPSHOT_DIR=$tmp_dir/change_snapshots
 SNAPSHOT_TARGETS="$tmp_dir/change_target"
 CHANGE_TARGET=$tmp_dir/change_target
 VERIFY_CMD="exit 2"
 EOF
-chmod 600 "$tmp_dir/change_fail.conf"
-assert_status 'change_deploy execute with failing gate returns error' 2 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_fail.conf" --source "$tmp_dir/change_source" --execute
-assert_contains 'change_deploy failing gate triggers auto-rollback message' '自動的にスナップショットへ切戻します'
-if [[ $(cat "$tmp_dir/change_target/index.html") == 'before-change' ]]; then
-  ok 'change_deploy auto-rollback actually restores pre-change content'
-else
-  not_ok 'change_deploy auto-rollback actually restores pre-change content'
-fi
+  chmod 600 "$tmp_dir/change_fail.conf"
+  assert_status 'change_deploy execute with failing gate returns error' 2 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_fail.conf" --source "$tmp_dir/change_source" --execute
+  assert_contains 'change_deploy failing gate triggers auto-rollback message' '自動的にスナップショットへ切戻します'
+  if [[ $(cat "$tmp_dir/change_target/index.html") == 'before-change' ]]; then
+    ok 'change_deploy auto-rollback actually restores pre-change content'
+  else
+    not_ok 'change_deploy auto-rollback actually restores pre-change content'
+  fi
 
-# change_deploy: 警告(終了コード1)は自動切戻しせず、人の判断を促すこと
-printf 'before-change\n' >"$tmp_dir/change_target/index.html"
-cat >"$tmp_dir/change_warn.conf" <<EOF
+  # change_deploy: 警告(終了コード1)は自動切戻しせず、人の判断を促すこと
+  printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+  cat >"$tmp_dir/change_warn.conf" <<EOF
 SNAPSHOT_DIR=$tmp_dir/change_snapshots
 SNAPSHOT_TARGETS="$tmp_dir/change_target"
 CHANGE_TARGET=$tmp_dir/change_target
 VERIFY_CMD="exit 1"
 EOF
-chmod 600 "$tmp_dir/change_warn.conf"
-assert_status 'change_deploy execute with warning gate returns warning' 1 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_warn.conf" --source "$tmp_dir/change_source" --execute
-if [[ $(cat "$tmp_dir/change_target/index.html") == 'after-change' ]]; then
-  ok 'change_deploy warning gate keeps the change (no auto-rollback)'
+  chmod 600 "$tmp_dir/change_warn.conf"
+  assert_status 'change_deploy execute with warning gate returns warning' 1 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_warn.conf" --source "$tmp_dir/change_source" --execute
+  if [[ $(cat "$tmp_dir/change_target/index.html") == 'after-change' ]]; then
+    ok 'change_deploy warning gate keeps the change (no auto-rollback)'
+  else
+    not_ok 'change_deploy warning gate keeps the change (no auto-rollback)'
+  fi
 else
-  not_ok 'change_deploy warning gate keeps the change (no auto-rollback)'
+  ok 'restore execute checks skipped (running as non-root)'
+  ok 'change_deploy execute checks skipped (running as non-root)'
 fi
 
 cat >"$tmp_dir/change_missing.conf" <<EOF
