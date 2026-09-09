@@ -1,0 +1,20 @@
+# 変更管理・復旧パック（snapshot_config.sh / restore_config.sh / change_deploy.sh）の共通設定です。
+# scripts/backup.sh（世代管理つきの利用者データバックアップ）とは目的が異なります。
+# こちらは「変更直前の設定状態を1回だけ保存し、検証ゲートに落ちたら即座に戻す」ための
+# 変更スコープのスナップショットです。設計理由は docs/51-change-design.md を参照してください。
+
+# スナップショットの保存先（絶対パス）。snapshot_config.sh がタイムスタンプ付きの
+# サブディレクトリを作成します。
+SNAPSHOT_DIR=/var/backups/change-snapshots
+
+# 変更前後で状態を保存・比較する対象（絶対パス、空白区切り）。
+# ファイル・ディレクトリのどちらも指定できます。存在しない対象はWARNのみで続行します。
+SNAPSHOT_TARGETS="/etc/nginx/sites-enabled /etc/ufw /etc/sudoers.d/90-opsadmin /etc/ssh/sshd_config.d/90-hardening.conf /var/www/html"
+
+# change_deploy.sh が実際に上書きする単一の変更対象（絶対パス）。
+# SNAPSHOT_TARGETS に必ず含めてください（含めない場合は切戻せません）。
+CHANGE_TARGET=/var/www/html
+
+# 変更適用後に実行する go/no-go 判定コマンド。既存の受け入れ試験をそのまま再利用します。
+# 終了コード 0=合格（確定） / 1=警告（人による判断） / 2以上=不合格（自動切戻し）。
+VERIFY_CMD="bash scripts/build_verify.sh --config config/provision.conf.example"

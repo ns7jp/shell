@@ -275,6 +275,118 @@ else
   fi
 fi
 
+## 変更管理・復旧(snapshot_config.sh / restore_config.sh / change_deploy.sh)のテスト --------
+mkdir -p "$tmp_dir/change_target" "$tmp_dir/change_snapshots" "$tmp_dir/change_source"
+printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+printf 'after-change\n' >"$tmp_dir/change_source/index.html"
+cat >"$tmp_dir/change.conf" <<EOF
+SNAPSHOT_DIR=$tmp_dir/change_snapshots
+SNAPSHOT_TARGETS="$tmp_dir/change_target"
+CHANGE_TARGET=$tmp_dir/change_target
+VERIFY_CMD="true"
+EOF
+chmod 600 "$tmp_dir/change.conf"
+
+assert_status 'snapshot dry-run succeeds' 0 bash "$ROOT_DIR/scripts/snapshot_config.sh" --config "$tmp_dir/change.conf" --label t
+assert_contains 'snapshot dry-run is visible' '[DRY-RUN]'
+if [[ -z $(find "$tmp_dir/change_snapshots" -mindepth 1 -print -quit) ]]; then
+  ok 'snapshot dry-run creates nothing'
+else
+  not_ok 'snapshot dry-run creates nothing'
+fi
+
+snapshot_output=$(bash "$ROOT_DIR/scripts/snapshot_config.sh" --config "$tmp_dir/change.conf" --label t --execute) && snap_status=0 || snap_status=$?
+if (( snap_status == 0 )); then ok 'snapshot execute succeeds'; else not_ok 'snapshot execute succeeds'; printf '%s\n' "$snapshot_output"; fi
+snapshot_path=$(grep -o 'SNAPSHOT_PATH=.*' <<<"$snapshot_output" | head -n1 | cut -d= -f2-)
+if [[ -n $snapshot_path && -f "$snapshot_path/manifest.txt" && -f "$snapshot_path/payload$tmp_dir/change_target/index.html" ]]; then
+  ok 'snapshot captures expected file into payload with manifest'
+else
+  not_ok 'snapshot captures expected file into payload with manifest'
+fi
+
+printf 'mutated-content\n' >"$tmp_dir/change_target/index.html"
+assert_status 'restore execute succeeds' 0 bash "$ROOT_DIR/scripts/restore_config.sh" --config "$tmp_dir/change.conf" --snapshot "$snapshot_path" --execute
+if [[ $(cat "$tmp_dir/change_target/index.html") == 'before-change' ]]; then
+  ok 'restore actually restores pre-change content'
+else
+  not_ok 'restore actually restores pre-change content'
+fi
+assert_contains 'restore verifies checksum against snapshot' 'すべて一致しました'
+
+# change_deploy: 成功する検証ゲート（VERIFY_CMD=true）で変更が確定すること
+printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+assert_status 'change_deploy execute with passing gate succeeds' 0 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change.conf" --source "$tmp_dir/change_source" --execute
+if [[ $(cat "$tmp_dir/change_target/index.html") == 'after-change' ]]; then
+  ok 'change_deploy applies change on passing gate'
+else
+  not_ok 'change_deploy applies change on passing gate'
+fi
+
+# change_deploy: 失敗する検証ゲート（終了コード2）で自動的に切戻ること
+printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+cat >"$tmp_dir/change_fail.conf" <<EOF
+SNAPSHOT_DIR=$tmp_dir/change_snapshots
+SNAPSHOT_TARGETS="$tmp_dir/change_target"
+CHANGE_TARGET=$tmp_dir/change_target
+VERIFY_CMD="exit 2"
+EOF
+chmod 600 "$tmp_dir/change_fail.conf"
+assert_status 'change_deploy execute with failing gate returns error' 2 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_fail.conf" --source "$tmp_dir/change_source" --execute
+assert_contains 'change_deploy failing gate triggers auto-rollback message' '自動的にスナップショットへ切戻します'
+if [[ $(cat "$tmp_dir/change_target/index.html") == 'before-change' ]]; then
+  ok 'change_deploy auto-rollback actually restores pre-change content'
+else
+  not_ok 'change_deploy auto-rollback actually restores pre-change content'
+fi
+
+# change_deploy: 警告(終了コード1)は自動切戻しせず、人の判断を促すこと
+printf 'before-change\n' >"$tmp_dir/change_target/index.html"
+cat >"$tmp_dir/change_warn.conf" <<EOF
+SNAPSHOT_DIR=$tmp_dir/change_snapshots
+SNAPSHOT_TARGETS="$tmp_dir/change_target"
+CHANGE_TARGET=$tmp_dir/change_target
+VERIFY_CMD="exit 1"
+EOF
+chmod 600 "$tmp_dir/change_warn.conf"
+assert_status 'change_deploy execute with warning gate returns warning' 1 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_warn.conf" --source "$tmp_dir/change_source" --execute
+if [[ $(cat "$tmp_dir/change_target/index.html") == 'after-change' ]]; then
+  ok 'change_deploy warning gate keeps the change (no auto-rollback)'
+else
+  not_ok 'change_deploy warning gate keeps the change (no auto-rollback)'
+fi
+
+cat >"$tmp_dir/change_missing.conf" <<EOF
+SNAPSHOT_TARGETS="$tmp_dir/change_target"
+EOF
+chmod 600 "$tmp_dir/change_missing.conf"
+assert_status 'snapshot rejects missing SNAPSHOT_DIR' 2 bash "$ROOT_DIR/scripts/snapshot_config.sh" --config "$tmp_dir/change_missing.conf"
+assert_contains 'missing SNAPSHOT_DIR explains cause' 'SNAPSHOT_DIR は必須'
+
+cat >"$tmp_dir/change_danger.conf" <<EOF
+SNAPSHOT_DIR=/etc
+SNAPSHOT_TARGETS="$tmp_dir/change_target"
+EOF
+chmod 600 "$tmp_dir/change_danger.conf"
+assert_status 'snapshot rejects dangerous SNAPSHOT_DIR' 2 bash "$ROOT_DIR/scripts/snapshot_config.sh" --config "$tmp_dir/change_danger.conf"
+assert_contains 'dangerous SNAPSHOT_DIR explains cause' '重要なシステムディレクトリ'
+
+cat >"$tmp_dir/change_no_target.conf" <<EOF
+SNAPSHOT_DIR=$tmp_dir/change_snapshots
+SNAPSHOT_TARGETS="$tmp_dir/other_dir"
+CHANGE_TARGET=$tmp_dir/change_target
+VERIFY_CMD="true"
+EOF
+chmod 600 "$tmp_dir/change_no_target.conf"
+assert_status 'change_deploy rejects CHANGE_TARGET missing from SNAPSHOT_TARGETS' 2 bash "$ROOT_DIR/scripts/change_deploy.sh" --config "$tmp_dir/change_no_target.conf" --source "$tmp_dir/change_source"
+assert_contains 'CHANGE_TARGET omission explains cause' 'SNAPSHOT_TARGETS に CHANGE_TARGET を含めてください'
+
+if [[ $(id -u) -ne 0 ]]; then
+  assert_status 'restore --execute without root is rejected' 2 bash "$ROOT_DIR/scripts/restore_config.sh" --config "$tmp_dir/change.conf" --snapshot "$snapshot_path" --execute
+  assert_contains 'restore root requirement message explains cause' 'root権限が必要です'
+else
+  ok 'restore root requirement check skipped (running as root)'
+fi
+
 printf '1..%d\n' "$((pass + fail))"
 printf '# pass=%d fail=%d\n' "$pass" "$fail"
 (( fail == 0 ))
