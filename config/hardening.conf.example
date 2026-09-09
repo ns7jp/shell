@@ -1,0 +1,29 @@
+# セキュリティ強化パック（harden_server.sh / verify_hardening.sh）の共通設定です。
+# harden_server.sh が作り、verify_hardening.sh が確認します。
+# provision.conf.example と同じ「1つの設定ファイルを両方が読む」設計です。
+
+# 専用の管理・作業ユーザー。日常のログイン・sudo操作はこのユーザーで行い、
+# root直接ログインは使いません。
+ADMIN_USER=opsadmin
+
+# ADMIN_USER に登録する公開鍵（1行、ssh-ed25519 または ssh-rsa 形式）。
+# 秘密鍵はこのファイルにもリポジトリにも含めません。
+ADMIN_SSH_PUBKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleE opsadmin@example"
+
+# sshd の追加設定を書き出す絶対パス（Include方式のドロップイン）。
+# 既定は本物の /etc/ssh/sshd_config.d/ 配下ですが、検証環境では
+# --config で別の絶対パスに差し替えてテストします。
+SSHD_DROPIN_PATH=/etc/ssh/sshd_config.d/90-hardening.conf
+
+# sudoers の追加設定を書き出す絶対パス（/etc/sudoers.d 配下想定）。
+SUDOERS_DROPIN_PATH=/etc/sudoers.d/90-opsadmin
+
+# SSHで待ち受けるポート。既定の22から変える運用も想定して変数化しています。
+SSH_PORT=22
+
+# ufwで明示的に許可するTCPポート（空白区切り）。SSH_PORTは自動的に含めるため、
+# ここにはHTTPなど追加で公開するポートだけを書きます。
+ALLOWED_TCP_PORTS="80"
+
+# 自動更新（unattended-upgrades）を導入するパッケージ名。
+UNATTENDED_UPGRADES_PACKAGE=unattended-upgrades

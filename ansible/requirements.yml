@@ -1,6 +1,8 @@
 ---
-# ufwモジュール（community.general.ufw）に必要な追加コレクションです。
-# ansible-core本体には含まれないため、事前に取得してください。
+# ufwモジュール（community.general.ufw）と、SSH公開鍵登録モジュール
+# （ansible.posix.authorized_key、security_hardening ロールで使用）に必要な
+# 追加コレクションです。ansible-core本体には含まれないため、事前に取得してください。
 #   ansible-galaxy collection install -r ansible/requirements.yml
 collections:
   - name: community.general
+  - name: ansible.posix

@@ -1,0 +1,92 @@
+---
+# scripts/harden_server.sh と同じ6工程（専用ユーザー作成、SSH鍵登録、sudoers drop-in、
+# SSHハードニング設定、ufw既定拒否+許可リスト、自動更新導入）を、Ansibleモジュールで冪等に実装します。
+
+- name: 専用の管理・作業ユーザーを作成する
+  ansible.builtin.user:
+    name: "{{ security_hardening_admin_user }}"
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    create_home: true
+    state: present
+
+- name: 専用ユーザーにSSH公開鍵を登録する（鍵認証化）
+  ansible.posix.authorized_key:
+    user: "{{ security_hardening_admin_user }}"
+    key: "{{ security_hardening_admin_ssh_pubkey }}"
+    state: present
+
+- name: 配置前にsudoersの構文検証ファイルを準備する
+  ansible.builtin.template:
+    src: sudoers_dropin.j2
+    dest: /tmp/security_hardening_sudoers_check
+    mode: "0440"
+  changed_when: false
+  check_mode: false
+
+- name: 構文を確認する（sudoers, visudo -c）
+  ansible.builtin.command:
+    cmd: visudo -cf /tmp/security_hardening_sudoers_check
+  changed_when: false
+  check_mode: false
+
+- name: 最小権限でsudoers drop-inを配置する
+  ansible.builtin.template:
+    src: sudoers_dropin.j2
+    dest: "{{ security_hardening_sudoers_dropin_path }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: 'visudo -cf %s'
+
+- name: SSHハードニング設定を配置する（root無効化・パスワード認証無効化）
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: "{{ security_hardening_sshd_dropin_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  # 意図的にハンドラーでsshdを再起動しません。設定ミスによる締め出し（ロックアウト）を
+  # 避けるため、'sshd -t' での検証と反映は運用者が確認したうえで手動で行う設計です。
+
+- name: ファイアウォールを既定拒否(incoming)にする
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: ファイアウォールの既定を許可(outgoing)にする
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: SSHポートをufwで許可する
+  community.general.ufw:
+    rule: allow
+    port: "{{ security_hardening_ssh_port | string }}"
+    proto: tcp
+
+- name: 追加で許可するTCPポートをufwで開放する
+  community.general.ufw:
+    rule: allow
+    port: "{{ item | string }}"
+    proto: tcp
+  loop: "{{ security_hardening_allowed_tcp_ports }}"
+
+- name: ファイアウォールを有効化する
+  community.general.ufw:
+    state: enabled
+
+- name: 自動更新パッケージを導入する
+  ansible.builtin.apt:
+    name: "{{ security_hardening_unattended_upgrades_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: 自動更新を有効化する
+  ansible.builtin.systemd:
+    name: unattended-upgrades
+    enabled: true
+    state: started
+  when: security_hardening_unattended_upgrades_package == 'unattended-upgrades'

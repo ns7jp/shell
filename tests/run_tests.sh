@@ -151,6 +151,109 @@ assert_status 'build_verify reports warnings for an unbuilt server' 1 bash "$ROO
 assert_contains 'build_verify explains missing package' 'パッケージ未導入'
 assert_contains 'build_verify explains missing file' '配布ファイルが見つかりません'
 
+## セキュリティ強化(harden_server.sh)のテスト -----------------------------------
+mkdir -p "$tmp_dir/hardening_ssh_dir" "$tmp_dir/hardening_sudoers_dir"
+cat >"$tmp_dir/hardening.conf" <<EOF
+ADMIN_USER=opsadmin
+ADMIN_SSH_PUBKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleE opsadmin@example"
+SSHD_DROPIN_PATH=$tmp_dir/hardening_ssh_dir/90-hardening.conf
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/90-opsadmin
+SSH_PORT=22
+ALLOWED_TCP_PORTS="80"
+UNATTENDED_UPGRADES_PACKAGE=unattended-upgrades
+EOF
+chmod 600 "$tmp_dir/hardening.conf"
+
+harden_dryrun_output=$(bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening.conf" 2>&1) && harden_dryrun_status=0 || harden_dryrun_status=$?
+if (( harden_dryrun_status <= 1 )); then ok 'harden dry-run does not error'; else not_ok 'harden dry-run does not error'; printf '%s\n' "$harden_dryrun_output"; fi
+if grep -Fq '[DRY-RUN]' <<<"$harden_dryrun_output"; then ok 'harden dry-run shows planned commands'; else not_ok 'harden dry-run shows planned commands'; fi
+if [[ ! -e "$tmp_dir/hardening_sudoers_dir/90-opsadmin" && ! -e "$tmp_dir/hardening_ssh_dir/90-hardening.conf" ]]; then
+  ok 'harden dry-run creates no drop-in files'
+else
+  not_ok 'harden dry-run creates no drop-in files'
+fi
+if grep -Fq 'visudo' <<<"$harden_dryrun_output" || grep -Fq 'sudoers drop-in の構文を確認しました' <<<"$harden_dryrun_output"; then
+  ok 'harden dry-run validates sudoers syntax with visudo -c'
+else
+  not_ok 'harden dry-run validates sudoers syntax with visudo -c'
+  printf '%s\n' "$harden_dryrun_output"
+fi
+
+cat >"$tmp_dir/hardening_missing.conf" <<EOF
+SSHD_DROPIN_PATH=$tmp_dir/hardening_ssh_dir/90-hardening.conf
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/90-opsadmin
+EOF
+chmod 600 "$tmp_dir/hardening_missing.conf"
+assert_status 'harden rejects missing admin user' 2 bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening_missing.conf"
+assert_contains 'missing admin user explains cause' 'ADMIN_USER は必須'
+
+cat >"$tmp_dir/hardening_bad_key.conf" <<EOF
+ADMIN_USER=opsadmin
+ADMIN_SSH_PUBKEY="not-a-valid-key"
+SSHD_DROPIN_PATH=$tmp_dir/hardening_ssh_dir/90-hardening.conf
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/90-opsadmin
+EOF
+chmod 600 "$tmp_dir/hardening_bad_key.conf"
+assert_status 'harden rejects malformed ssh public key' 2 bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening_bad_key.conf"
+assert_contains 'malformed ssh key explains cause' 'ADMIN_SSH_PUBKEY の形式'
+
+cat >"$tmp_dir/hardening_root_user.conf" <<EOF
+ADMIN_USER=root
+ADMIN_SSH_PUBKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleE opsadmin@example"
+SSHD_DROPIN_PATH=$tmp_dir/hardening_ssh_dir/90-hardening.conf
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/90-opsadmin
+EOF
+chmod 600 "$tmp_dir/hardening_root_user.conf"
+assert_status 'harden rejects ADMIN_USER=root' 2 bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening_root_user.conf"
+assert_contains 'root user rejection explains cause' 'ADMIN_USER に root は指定できません'
+
+cat >"$tmp_dir/hardening_bad_port.conf" <<EOF
+ADMIN_USER=opsadmin
+ADMIN_SSH_PUBKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleE opsadmin@example"
+SSHD_DROPIN_PATH=$tmp_dir/hardening_ssh_dir/90-hardening.conf
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/90-opsadmin
+SSH_PORT=70000
+EOF
+chmod 600 "$tmp_dir/hardening_bad_port.conf"
+assert_status 'harden rejects out-of-range ssh port' 2 bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening_bad_port.conf"
+assert_contains 'ssh port rejection explains range' '1 から 65535 の範囲'
+
+cat >"$tmp_dir/hardening_danger.conf" <<EOF
+ADMIN_USER=opsadmin
+ADMIN_SSH_PUBKEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleE opsadmin@example"
+SSHD_DROPIN_PATH=/etc
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/90-opsadmin
+EOF
+chmod 600 "$tmp_dir/hardening_danger.conf"
+assert_status 'harden rejects dangerous sshd dropin path' 2 bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening_danger.conf"
+assert_contains 'dangerous sshd dropin path explains cause' '重要なシステムディレクトリ'
+
+if [[ $(id -u) -ne 0 ]]; then
+  assert_status 'harden --execute without root is rejected' 2 bash "$ROOT_DIR/scripts/harden_server.sh" --config "$tmp_dir/hardening.conf" --execute
+  assert_contains 'harden root requirement message explains cause' 'root権限が必要です'
+else
+  ok 'harden root requirement check skipped (running as root)'
+fi
+
+## セキュリティ受け入れ試験(verify_hardening.sh)のテスト ---------------------------
+assert_status 'verify_hardening rejects invalid config' 2 bash "$ROOT_DIR/scripts/verify_hardening.sh" --config "$tmp_dir/hardening_bad_port.conf"
+
+cat >"$tmp_dir/hardening_never.conf" <<EOF
+ADMIN_USER=zzz-does-not-exist-user
+SSHD_DROPIN_PATH=$tmp_dir/hardening_ssh_dir/no-such-dropin.conf
+SUDOERS_DROPIN_PATH=$tmp_dir/hardening_sudoers_dir/no-such-sudoers
+SSH_PORT=22
+EOF
+chmod 600 "$tmp_dir/hardening_never.conf"
+assert_status 'verify_hardening reports warnings for an unhardened server' 1 bash "$ROOT_DIR/scripts/verify_hardening.sh" --config "$tmp_dir/hardening_never.conf"
+assert_contains 'verify_hardening explains missing user' '専用ユーザーが見つかりません'
+assert_contains 'verify_hardening explains missing sudoers dropin' 'sudoers drop-in が見つかりません'
+
+# --execute を実際に動かした構築後の確認は、専用ユーザー作成やsudoers/SSH設定の
+# 配置がrootと実システムへの変更を要するため、この自動テストでは行いません
+# （root権限下でも、テスト用の使い捨てユーザーを実システムに作成することは避けます）。
+# 実VMでの --execute と verify_hardening.sh の通し確認は NOT RUN です。
+
 ## Ansible構成管理パック(ansible/site.yml)のテスト -------------------------------
 # ansibleは任意導入のツールのため、無い環境ではWARNやエラーにせず、
 # 既存のufw/systemd未導入時と同じ「見つからなければスキップし理由を記録する」方針にそろえます。

@@ -1,0 +1,5 @@
+# Ansible（security_hardening role）が生成しました。手動編集せず、
+# ansible/roles/security_hardening/defaults/main.yml を書き換えて再適用してください。
+# {{ security_hardening_admin_user }} には無条件のフルsudoではなく、パスワード入力を要求したうえでの
+# 一般的な管理コマンドのみを許可します（最小権限）。
+{{ security_hardening_admin_user }} ALL=(ALL) ALL

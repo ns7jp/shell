@@ -1,0 +1,13 @@
+---
+# config/hardening.conf.example と同じキー名・同じ考え方の変数です。
+# Bash版（scripts/harden_server.sh）とAnsible版で望ましい状態の定義がずれないようにするためです。
+security_hardening_admin_user: opsadmin
+# 秘密鍵はここに置きません。公開鍵はプレイブック実行時に -e か group_vars で上書きする想定です。
+security_hardening_admin_ssh_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleExampleExampleExampleExampleE opsadmin@example"
+security_hardening_sshd_dropin_path: /etc/ssh/sshd_config.d/90-hardening.conf
+security_hardening_sudoers_dropin_path: /etc/sudoers.d/90-opsadmin
+security_hardening_ssh_port: 22
+# 空白区切りではなく、Ansibleらしくリストで持たせます。
+security_hardening_allowed_tcp_ports:
+  - 80
+security_hardening_unattended_upgrades_package: unattended-upgrades
