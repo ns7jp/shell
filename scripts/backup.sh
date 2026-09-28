@@ -27,7 +27,10 @@ load_config "$config_path"
 : "${ARCHIVE_PREFIX:=backup}"
 require_absolute_safe_path SOURCE_DIR "$SOURCE_DIR"
 require_absolute_safe_path BACKUP_DIR "$BACKUP_DIR"
-[[ $SOURCE_DIR != "$BACKUP_DIR" && $BACKUP_DIR != "$SOURCE_DIR"/* ]] || die '保存先をバックアップ元の配下に置くことはできません'
+# 書き方の違い（末尾の / や //）で配下判定をすり抜けないよう、正規化した値で比べます。
+source_norm=$(normalize_path "$SOURCE_DIR")
+backup_norm=$(normalize_path "$BACKUP_DIR")
+[[ $source_norm != "$backup_norm" && $backup_norm != "$source_norm"/* ]] || die '保存先をバックアップ元の配下に置くことはできません'
 require_integer_range RETENTION_DAYS "$RETENTION_DAYS" 1 3650
 [[ $ARCHIVE_PREFIX =~ ^[A-Za-z0-9._-]+$ ]] || die 'ARCHIVE_PREFIX に使用できない文字があります'
 [[ -d $SOURCE_DIR && -r $SOURCE_DIR ]] || die "バックアップ元を読み取れません: $SOURCE_DIR"
