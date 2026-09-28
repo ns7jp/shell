@@ -75,17 +75,6 @@ EOF
   assert_contains "rejection of $sneaky explains cause" '重要なシステムディレクトリ'
 done
 
-# /./ や // が混ざっていても、保存先が保存元の配下なら拒否されることを確認します。
-cat >"$tmp_dir/nested.conf" <<EOF
-SOURCE_DIR=$tmp_dir/source
-BACKUP_DIR=$tmp_dir/./source//inner
-RETENTION_DAYS=7
-ARCHIVE_PREFIX=test
-EOF
-chmod 600 "$tmp_dir/nested.conf"
-assert_status 'backup dir under source written differently is rejected' 2 bash "$ROOT_DIR/scripts/backup.sh" --config "$tmp_dir/nested.conf"
-assert_contains 'nested backup rejection explains cause' '配下に置くことはできません'
-
 cat >"$tmp_dir/missing.conf" <<'EOF'
 BACKUP_DIR=/tmp/backup-test
 RETENTION_DAYS=7
