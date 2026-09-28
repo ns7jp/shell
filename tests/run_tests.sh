@@ -61,6 +61,20 @@ chmod 600 "$tmp_dir/unsafe.conf"
 assert_status 'dangerous source path is rejected' 2 bash "$ROOT_DIR/scripts/backup.sh" --config "$tmp_dir/unsafe.conf"
 assert_contains 'path rejection explains cause' '重要なシステムディレクトリ'
 
+# 同じ場所を指す別の書き方でもすり抜けないことを確認します（PowerShell版 PS-03 と同じ組み合わせ）。
+# 正規化を忘れると '//etc' や '/./etc' が素通りし、安全機構が無効になります。
+for sneaky in '//etc' '/./etc' '///etc' '/etc/' '///tmp' '/usr/'; do
+  cat >"$tmp_dir/sneaky.conf" <<EOF
+SOURCE_DIR=$sneaky
+BACKUP_DIR=$tmp_dir/backups
+RETENTION_DAYS=7
+ARCHIVE_PREFIX=test
+EOF
+  chmod 600 "$tmp_dir/sneaky.conf"
+  assert_status "dangerous path written differently is rejected: $sneaky" 2 bash "$ROOT_DIR/scripts/backup.sh" --config "$tmp_dir/sneaky.conf"
+  assert_contains "rejection of $sneaky explains cause" '重要なシステムディレクトリ'
+done
+
 cat >"$tmp_dir/missing.conf" <<'EOF'
 BACKUP_DIR=/tmp/backup-test
 RETENTION_DAYS=7

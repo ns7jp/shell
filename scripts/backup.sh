@@ -30,7 +30,7 @@ require_absolute_safe_path BACKUP_DIR "$BACKUP_DIR"
 [[ $SOURCE_DIR != "$BACKUP_DIR" && $BACKUP_DIR != "$SOURCE_DIR"/* ]] || die '保存先をバックアップ元の配下に置くことはできません'
 require_integer_range RETENTION_DAYS "$RETENTION_DAYS" 1 3650
 [[ $ARCHIVE_PREFIX =~ ^[A-Za-z0-9._-]+$ ]] || die 'ARCHIVE_PREFIX に使用できない文字があります'
-[[ -d $SOURCE_DIR && -r $SOURCE_DIR ]] || die "バックアップ元を読み取れません: $SOURCE_DIR"
+[[ -d $SOURCE_DIR && -r $SOURCE_DIR ]] || die "バックアップ元を読み取れません: $SOURCE_DIR（設定ファイル $config_path の SOURCE_DIR を、存在して読み取れるディレクトリに変更してください）"
 require_command tar
 require_command find
 

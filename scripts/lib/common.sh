@@ -31,14 +31,35 @@ require_integer_range() {
   (( value >= min && value <= max )) || die "$name は $min から $max の範囲で指定してください"
 }
 
+# パスの書き方を1つの形へそろえます（正規化）。ファイルの存在やシンボリックリンクは見ません。
+#   ・'//etc'、'///etc' のような連続した / を1つにする
+#   ・'/./etc' のような「.」の区切りを取り除く
+#   ・'/etc/' のような末尾の / を取り除く（ルートそのものは '/' のまま）
+# PowerShell版の Assert-OpsSafePath が [System.IO.Path]::GetFullPath で行っている正規化と同じ考え方です。
+# realpath -m はシンボリックリンクをたどるため（Ubuntuでは /lib が /usr/lib になる）、使っていません。
+# '..' はここでは解釈せず、呼び出し側で拒否します。
+normalize_path() {
+  local value=$1 part normalized=''
+  local -a parts=()
+  IFS=/ read -r -a parts <<<"$value"
+  for part in "${parts[@]}"; do
+    [[ -z $part || $part == . ]] && continue
+    normalized+="/$part"
+  done
+  printf '%s\n' "${normalized:-/}"
+}
+
 require_absolute_safe_path() {
-  local name=$1 value=$2
+  local name=$1 value=$2 normalized
   [[ -n $value && $value == /* ]] || die "$name は空でない絶対パスにしてください"
-  case "$value" in
+  [[ $value != *'/../'* && $value != */.. ]] || die "$name に .. は使用できません"
+  # 文字列をそのまま比べると、'//etc'、'/./etc'、'/etc/' のように同じ場所を指す
+  # 別の書き方で検査をすり抜けるため、正規化してから判定します。
+  normalized=$(normalize_path "$value")
+  case "$normalized" in
     /|/bin|/boot|/dev|/etc|/home|/lib|/lib64|/proc|/root|/run|/sbin|/sys|/tmp|/usr|/var)
       die "$name に重要なシステムディレクトリそのものは指定できません: $value" ;;
   esac
-  [[ $value != *'/../'* && $value != */.. ]] || die "$name に .. は使用できません"
 }
 
 run_or_show() {

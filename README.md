@@ -2,6 +2,13 @@
 
 未経験からサーバー構築・運用エンジニアを目指す学習者向けに、現場を想定した要件定義、設計、実装、テスト、運用手順、障害対応、証跡の残し方を1つにまとめたポートフォリオです。Linux（Bash + Python）とWindows（PowerShell 7）を、**同じ設計思想で**扱います。
 
+## このリポジトリの位置づけ
+
+- **学習用の副作品です。** 主作品は [ns7jp/server](https://github.com/ns7jp/server) で、本人が手元のVMで操作した記録はそちらにまとめています。
+- **AI支援で作成した部分が大きいです。** スクリプト・テスト・文書の多くは、AIツール（Claude Code・OpenAI Codex）の支援で作成しました。2026-09-28 時点で確認できる範囲では、main に取り込んだプルリクエスト11件のうち8件は `claude/…`、2件は `codex`・`codex/python` のブランチからのもので、マージを除くコミット28件のうち22件は作者が `Claude` です。作者が島田則幸のコミットが本人の手作業か AI ツールの出力かは、履歴からは区別できません。
+- **本人による実行記録:** [検証証跡](docs/08-evidence.md)の記録は、AI支援セッションの作業用コンテナとGitHub Actionsで実行したものが中心です。本人が自分の端末で実行したと確認できる記録はありません（2026-08-28 の Git for Windows での記録は、実行者を判別できず本人確認待ちです）。Bash演習21問の本人による実施も `NOT RUN` です。
+- **主作品との関係:** Ansible構成管理パック・セキュリティ強化パック・変更管理・復旧パックは、主作品の `ansible/roles/`（`nginx`・`common` など）や [変更管理](https://github.com/ns7jp/server/blob/main/docs/change-management.md) と扱うテーマが重なります。本人がVMで操作した記録は主作品側にあり、このリポジトリの同じテーマのパックは、実VMへの適用を `NOT RUN` とした教材です。
+
 > このリポジトリは学習用です。最初は必ず隔離した検証環境で実行してください。変更を伴うスクリプトは既定でドライランになり、`--execute`（PowerShellでは `-Execute`）を付けた場合だけ処理します。
 
 ## 30秒で分かる内容
@@ -69,9 +76,13 @@ cd shell
 chmod +x scripts/*.sh tests/run_tests.sh
 make test
 ./scripts/server_audit.sh --config config/audit.conf.example
-./scripts/backup.sh --config config/backup.conf.example
+mkdir -p "$HOME/lab/src" && printf 'sample\n' > "$HOME/lab/src/sample.txt"
+sed -e 's|^SOURCE_DIR=.*|SOURCE_DIR='"$HOME"'/lab/src|' -e 's|^BACKUP_DIR=.*|BACKUP_DIR='"$HOME"'/lab/backups|' config/backup.conf.example > "$HOME/lab/backup.conf"
+./scripts/backup.sh --config "$HOME/lab/backup.conf"
 ./scripts/provision_web_server.sh --config config/provision.conf.example
 ```
+
+`backup.sh` の設定例（`config/backup.conf.example`）は、実サーバーを想定した `/srv/example-app/data` をバックアップ元にしています。新しい環境にはこのディレクトリが無いため、設定例をそのまま指定すると「バックアップ元を読み取れません」と表示して終了コード `2` で止まります。これは不具合ではなく、存在しない場所を黙って受け入れない設計です。上の手順では、自分が読み書きできる `$HOME/lab/src` を作り、設定例のパスを書き換えた設定ファイルで実行しています（`--execute` を付けていないため、ドライランで予定だけ表示します）。
 
 `server_audit.sh` は警告を検出すると終了コード `1`、実行不能なエラーでは `2` を返します。結果を確認する場合は直後に `echo $?` を実行してください。`provision_web_server.sh` は上記のとおり `--execute` を付けていないため、何も変更しません。実際にサーバーを構築する手順は、専用の検証環境（VMやコンテナ）を用意したうえで[構築ハンズオン](docs/13-build-hands-on.md)に従ってください。
 
