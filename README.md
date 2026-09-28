@@ -69,9 +69,13 @@ cd shell
 chmod +x scripts/*.sh tests/run_tests.sh
 make test
 ./scripts/server_audit.sh --config config/audit.conf.example
-./scripts/backup.sh --config config/backup.conf.example
+mkdir -p "$HOME/lab/src" && printf 'sample\n' > "$HOME/lab/src/sample.txt"
+sed -e 's|^SOURCE_DIR=.*|SOURCE_DIR='"$HOME"'/lab/src|' -e 's|^BACKUP_DIR=.*|BACKUP_DIR='"$HOME"'/lab/backups|' config/backup.conf.example > "$HOME/lab/backup.conf"
+./scripts/backup.sh --config "$HOME/lab/backup.conf"
 ./scripts/provision_web_server.sh --config config/provision.conf.example
 ```
+
+`backup.sh` の設定例（`config/backup.conf.example`）は、実サーバーを想定した `/srv/example-app/data` をバックアップ元にしています。新しい環境にはこのディレクトリが無いため、設定例をそのまま指定すると「バックアップ元を読み取れません」と表示して終了コード `2` で止まります。これは不具合ではなく、存在しない場所を黙って受け入れない設計です。上の手順では、自分が読み書きできる `$HOME/lab/src` を作り、設定例のパスを書き換えた設定ファイルで実行しています（`--execute` を付けていないため、ドライランで予定だけ表示します）。
 
 `server_audit.sh` は警告を検出すると終了コード `1`、実行不能なエラーでは `2` を返します。結果を確認する場合は直後に `echo $?` を実行してください。`provision_web_server.sh` は上記のとおり `--execute` を付けていないため、何も変更しません。実際にサーバーを構築する手順は、専用の検証環境（VMやコンテナ）を用意したうえで[構築ハンズオン](docs/13-build-hands-on.md)に従ってください。
 
