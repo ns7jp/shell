@@ -35,8 +35,9 @@
 | C-15 | change_deploy | 実際の`build_verify.sh`をVERIFY_CMDに指定し、実Ubuntu VM上のNginxに対して適用 | 実際のHTTP応答・サービス状態を反映したgo/no-go判定ができる | NOT RUN |
 | C-16 | change_deploy / restore_config | 実Ubuntu VMでの`--execute`実行と、実ファイル（nginx設定・サイト内容）の変更前後比較 | 実環境でも一時ディレクトリのテストと同じ挙動になる | NOT RUN |
 | C-17 | snapshot_config / change_deploy | 同じ設定で変更適用を2回実行し、2回目のスナップショットが1回目と別ディレクトリに作られること | タイムスタンプにより毎回別のスナップショットが作成され、上書きされない | 手動 |
+| C-18 | snapshot_config | `SNAPSHOT_DIR=<B>/app/snaps` に対し、`SNAPSHOT_TARGETS` を `<B>/app`・`<B>//app`・`<B>/./app`・`<B>/app/` のいずれかで指定（重なり） | 書き方によらず終了2、「SNAPSHOT_DIR とSNAPSHOT_TARGETSが重なっています」を含む（2026-09-28追加。[08. 検証証跡](08-evidence.md)を参照） | 自動 |
 
-C-01からC-14は自動テストとして実施済みです。C-08・C-14は実行環境がrootのときはスキップされ、その旨をテスト結果に残します（`tests/run_tests.sh`内で`id -u`が0でない場合のみ実行、B-06・H-09と同じ方式）。C-15・C-16は実行環境（実VM）が無いため`NOT RUN`です。C-17は自動化しておらず、実行者が結果を読んで判断する「手動」です。
+C-01からC-14とC-18は自動テストとして実施済みです。C-08・C-14は実行環境がrootのときはスキップされ、その旨をテスト結果に残します（`tests/run_tests.sh`内で`id -u`が0でない場合のみ実行、B-06・H-09と同じ方式）。C-15・C-16は実行環境（実VM）が無いため`NOT RUN`です。C-17は自動化しておらず、実行者が結果を読んで判断する「手動」です。
 
 ## 実際に確認した結果（この検証環境）
 
