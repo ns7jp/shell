@@ -10,55 +10,63 @@
 
 ## 現在の台帳
 
-| 項目 | 状態 | 証跡 |
-|---|---|---|
-| Bash構文検証 | PASS | 2026-08-28、Git for Windows Bash 5.3.15、全5ファイル `bash -n` 終了0 |
-| 自己完結テスト | PASS | 2026-08-28、Git for Windows Bash 5.3.15、12/12成功、終了0 |
-| ShellCheck | PASS (CI) | PR #1、Ubuntu runner、`shell-quality`、2026-08-28 |
-| GitHub Actions | PASS | PR #1、コミット `aa5a3fa` で `All checks have passed` を確認 |
-| Ubuntu VM監査 | NOT RUN | VM情報と監査ログが必要 |
-| バックアップ作成・復元 | NOT RUN | archiveと`diff -r`結果が必要 |
-| ログ圧縮・保持 | NOT RUN | テストログと前後比較が必要 |
-| cron/systemd timer | NOT RUN | 登録内容と定期実行ログが必要 |
-| 本番環境 | NOT RUN | 本パックの範囲外 |
-| 構築スクリプトのBash構文検証 | PASS | 2026-08-29、`bash -n`全対象ファイル終了0 |
-| 構築スクリプトの自己完結テスト | PASS | 2026-08-29、`bash tests/run_tests.sh` 26/26成功、終了0 |
-| 構築スクリプトのShellCheck | PASS | 2026-08-29、ShellCheck 0.9.0、`make lint`終了0 |
-| コンテナでのnginx構築(`provision_web_server.sh --execute`) | PASS（要約はNOT RUN欄参照） | 2026-08-29、nginx導入とサンプルページ配置は成功、systemd/ufwは環境未対応でWARN、終了1 |
-| 受け入れ試験(`build_verify.sh`) | PASS | 2026-08-29、nginx手動起動後、パッケージ/サービス/配布ファイル/HTTP応答の4項目OK、ufw未導入で警告1件、終了1 |
-| 構築ログのJSON証跡化 | PASS | 2026-08-29、既存の`audit_report.py`を再利用してJSON化、終了1（WARN由来） |
-| 実Ubuntu VMでの構築・再起動後のsystemd自動起動 | NOT RUN | コンテナにはsystemdがなく確認不能。実VMでの確認が必要 |
-| 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 |
-| Ansible等による構成管理の再現性 | NOT RUN | [構築ロードマップ](10-server-build-roadmap.md)のPhase 2相当、未着手 |
-| Bash演習パックの採点器の自己検査 | PASS | `make lab-selfcheck`（模範解答で合格・誤答で不合格を全問検証） |
-| Bash演習パックのShellCheck | PASS | `make lab-lint` 終了0 |
-| 学習者本人によるBash演習21問の完走 | NOT RUN | 学習者ごとに実施し、下の「Bash演習パック」節へ記録します |
-| Windows実機での点検値の取得（CPU・メモリ・サービス・イベントログ） | NOT RUN | `Get-CimInstance` / `Get-Service` / `Get-WinEvent` はLinuxに存在せず、CIのWindowsジョブでも実サーバーへの点検を回していない（[25. テスト仕様](25-powershell-test-plan.md)のPS-46） |
-| PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象7ファイル（実装6 + テスト1）、`make ps-syntax` 終了0 |
-| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 66/66成功、終了0、追加モジュール不要 |
-| PowerShell点検スクリプトの実行 | PASS | 2026-09-03、Linux上で `Invoke-ServerAudit.ps1` 実行、Windows専用コマンド不在の2項目をWARN、終了1 |
-| PowerShellログのJSON証跡化 | PASS | 2026-09-03、既存の `audit_report.py` を無改修で再利用、`result=WARN`、終了1 |
-| PowerShell構築スクリプトのドライラン | PASS | 2026-09-03、`Install-WebServer.ps1`（`-Execute` なし）でファイル未作成を確認、終了1（環境依存の警告3件） |
-| PowerShell構築スクリプトのOS・権限拒否 | PASS | 2026-09-03、Linuxで `-Execute` を指定すると実行前に終了2で拒否 |
-| PowerShellバックアップの作成と整合性確認 | PASS | 2026-09-03、`New-DataBackup.ps1 -Execute` でZIP作成、開いて1件を確認、終了0 |
-| PowerShellログ保守 | PASS | 2026-09-03、`Invoke-LogMaintenance.ps1 -Execute` で圧縮後に元ログ0バイト、終了0 |
-| PowerShell設定検証（フェイルクローズ） | PASS | 2026-09-03、危険パス・範囲外の値・必須欠落・処理入り`.psd1`をすべて終了2で拒否 |
-| PSScriptAnalyzer（PowerShell静的解析・ローカル） | NOT RUN | 2026-09-03、検証環境からPowerShell Galleryへ到達できずインストール不可。**CIでは実行済み**（下の「PSScriptAnalyzer（CI上）」行を参照）。NOT RUN はローカル環境に限った話 |
-| Windows実機でのIIS構築（`Install-WebServer.ps1 -Execute`） | NOT RUN | Windows実機が必要。役割導入・サービス自動起動・ファイアウォール規則は未確認 |
-| Windows実機での受け入れ試験（全項目OK） | NOT RUN | 構築が未実施のため。Linuxでは5項目すべてWARNになることのみ確認済み |
-| Windows再起動後のサービス自動起動 | NOT RUN | 再起動をまたぐ確認は実機VMが必要 |
-| ファイアウォール許可後の別端末からの到達性 | NOT RUN | 2台以上のネットワーク環境が必要 |
-| タスクスケジューラでの定期実行 | NOT RUN | 登録スクリプトは本パックに含めていない |
-| GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、コミット`307c406`で構文チェック・自動テスト・PSScriptAnalyzerすべて成功。初回コミット`146a1b2`では`PSUseSingularNouns`を1件指摘され失敗 |
-| GitHub ActionsのPowerShellジョブ（windows-latest） | PASS | 2026-09-03、コミット`307c406`で `1..58 / pass=58 fail=0`、PSScriptAnalyzerも `PSScriptAnalyzer OK`。初回コミット`146a1b2`では `pass=54 fail=2`（PS-16がWindowsでのみ失敗） |
-| PSScriptAnalyzer（CI上） | PASS | 2026-09-03、ubuntu-latest・windows-latestの両方で指摘0件。ローカル環境ではPowerShell Galleryへ到達できず実行不可 |
-| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Microsoft Windows Server 2025 / 10.0.26100 Datacenter、イメージ `windows-2025-vs2026`。ジョブログの「Operating System」で確認）。コミット`b28d3c4`で63/63成功（同コミットのLinuxは66件。差はOSごとに対象外・確認内容が変わるため） |
+| 項目 | 状態 | 証跡 | 実行者・実行環境 |
+|---|---|---|---|
+| Bash構文検証 | PASS | 2026-08-28、Git for Windows Bash 5.3.15、全5ファイル `bash -n` 終了0 | Windows + Git for Windows Bash。記録したコミット（`a9525e1`）の作者は島田則幸。本人が手で実行したか、AIツールが実行したかは記録から判別できない（本人確認待ち） |
+| 自己完結テスト | PASS | 2026-08-28、Git for Windows Bash 5.3.15、12/12成功、終了0 | Windows + Git for Windows Bash。記録したコミット（`a9525e1`）の作者は島田則幸。本人が手で実行したか、AIツールが実行したかは記録から判別できない（本人確認待ち） |
+| ShellCheck | PASS (CI) | PR #1、Ubuntu runner、`shell-quality`、2026-08-28 | GitHub Actions ランナー（CI） |
+| GitHub Actions | PASS | PR #1、コミット `aa5a3fa` で `All checks have passed` を確認 | GitHub Actions ランナー（CI） |
+| Ubuntu VM監査 | NOT RUN | VM情報と監査ログが必要 | —（未実施） |
+| バックアップ作成・復元 | NOT RUN | archiveと`diff -r`結果が必要 | —（未実施） |
+| ログ圧縮・保持 | NOT RUN | テストログと前後比較が必要 | —（未実施） |
+| cron/systemd timer | NOT RUN | 登録内容と定期実行ログが必要 | —（未実施） |
+| 本番環境 | NOT RUN | 本パックの範囲外 | —（未実施） |
+| 構築スクリプトのBash構文検証 | PASS | 2026-08-29、`bash -n`全対象ファイル終了0 | AI支援セッション（Claude Code、コミット `e0eec65`）のLinuxコンテナ（root） |
+| 構築スクリプトの自己完結テスト | PASS | 2026-08-29、`bash tests/run_tests.sh` 26/26成功、終了0 | AI支援セッション（Claude Code、コミット `e0eec65`）のLinuxコンテナ（root） |
+| 構築スクリプトのShellCheck | PASS | 2026-08-29、ShellCheck 0.9.0、`make lint`終了0 | AI支援セッション（Claude Code、コミット `e0eec65`）のLinuxコンテナ（root） |
+| コンテナでのnginx構築(`provision_web_server.sh --execute`) | PASS（要約はNOT RUN欄参照） | 2026-08-29、nginx導入とサンプルページ配置は成功、systemd/ufwは環境未対応でWARN、終了1 | AI支援セッション（Claude Code、コミット `e0eec65`）のLinuxコンテナ（root） |
+| 受け入れ試験(`build_verify.sh`) | PASS | 2026-08-29、nginx手動起動後、パッケージ/サービス/配布ファイル/HTTP応答の4項目OK、ufw未導入で警告1件、終了1 | AI支援セッション（Claude Code、コミット `e0eec65`）のLinuxコンテナ（root） |
+| 構築ログのJSON証跡化 | PASS | 2026-08-29、既存の`audit_report.py`を再利用してJSON化、終了1（WARN由来） | AI支援セッション（Claude Code、コミット `e0eec65`）のLinuxコンテナ（root） |
+| 実Ubuntu VMでの構築・再起動後のsystemd自動起動 | NOT RUN | コンテナにはsystemdがなく確認不能。実VMでの確認が必要 | —（未実施） |
+| 実ufw導入によるポート到達性の確認 | NOT RUN | コンテナに`ufw`が未導入。実VMでの確認が必要 | —（未実施） |
+| Ansibleによる構成管理の再現性 | NOT RUN | Ansibleパック（`ansible/site.yml`、[30](30-ansible-project-overview.md)〜[33](33-ansible-test-plan.md)）は2026-09-09に追加済み。実VMへの適用・2回目適用での冪等性確認はNOT RUN（[33. テスト仕様](33-ansible-test-plan.md)のA-05〜A-07） | —（未実施） |
+| Bash演習パックの採点器の自己検査 | PASS | `make lab-selfcheck`（模範解答で合格・誤答で不合格を全問検証） | AI支援セッション（Claude Code、コミット `c994ee0`）のUbuntu環境 |
+| Bash演習パックのShellCheck | PASS | `make lab-lint` 終了0 | AI支援セッション（Claude Code、コミット `c994ee0`）のUbuntu環境 |
+| 学習者本人によるBash演習21問の完走 | NOT RUN | 学習者ごとに実施し、下の「Bash演習パック」節へ記録します | —（未実施） |
+| Windows実機での点検値の取得（CPU・メモリ・サービス・イベントログ） | NOT RUN | `Get-CimInstance` / `Get-Service` / `Get-WinEvent` はLinuxに存在せず、CIのWindowsジョブでも実サーバーへの点検を回していない（[25. テスト仕様](25-powershell-test-plan.md)のPS-46） | —（未実施） |
+| PowerShell構文検証 | PASS | 2026-09-03、PowerShell 7.4.6 (Linux)、対象7ファイル（実装6 + テスト1）、`make ps-syntax` 終了0 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShell自動テスト | PASS | 2026-09-03、`Run-PowerShellTests.ps1` 66/66成功、終了0、追加モジュール不要 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShell点検スクリプトの実行 | PASS | 2026-09-03、Linux上で `Invoke-ServerAudit.ps1` 実行、Windows専用コマンド不在の2項目をWARN、終了1 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShellログのJSON証跡化 | PASS | 2026-09-03、既存の `audit_report.py` を無改修で再利用、`result=WARN`、終了1 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShell構築スクリプトのドライラン | PASS | 2026-09-03、`Install-WebServer.ps1`（`-Execute` なし）でファイル未作成を確認、終了1（環境依存の警告3件） | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShell構築スクリプトのOS・権限拒否 | PASS | 2026-09-03、Linuxで `-Execute` を指定すると実行前に終了2で拒否 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShellバックアップの作成と整合性確認 | PASS | 2026-09-03、`New-DataBackup.ps1 -Execute` でZIP作成、開いて1件を確認、終了0 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShellログ保守 | PASS | 2026-09-03、`Invoke-LogMaintenance.ps1 -Execute` で圧縮後に元ログ0バイト、終了0 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PowerShell設定検証（フェイルクローズ） | PASS | 2026-09-03、危険パス・範囲外の値・必須欠落・処理入り`.psd1`をすべて終了2で拒否 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| PSScriptAnalyzer（PowerShell静的解析・ローカル） | NOT RUN | 2026-09-03、検証環境からPowerShell Galleryへ到達できずインストール不可。**CIでは実行済み**（下の「PSScriptAnalyzer（CI上）」行を参照）。NOT RUN はローカル環境に限った話 | AI支援セッション（Claude Code）のLinuxコンテナ（root、PowerShell 7.4.6） |
+| Windows実機でのIIS構築（`Install-WebServer.ps1 -Execute`） | NOT RUN | Windows実機が必要。役割導入・サービス自動起動・ファイアウォール規則は未確認 | —（未実施） |
+| Windows実機での受け入れ試験（全項目OK） | NOT RUN | 構築が未実施のため。Linuxでは5項目すべてWARNになることのみ確認済み | —（未実施） |
+| Windows再起動後のサービス自動起動 | NOT RUN | 再起動をまたぐ確認は実機VMが必要 | —（未実施） |
+| ファイアウォール許可後の別端末からの到達性 | NOT RUN | 2台以上のネットワーク環境が必要 | —（未実施） |
+| タスクスケジューラでの定期実行 | NOT RUN | 登録スクリプトは本パックに含めていない | —（未実施） |
+| GitHub ActionsのPowerShellジョブ（ubuntu-latest） | PASS | 2026-09-03、コミット`307c406`で構文チェック・自動テスト・PSScriptAnalyzerすべて成功。初回コミット`146a1b2`では`PSUseSingularNouns`を1件指摘され失敗 | GitHub Actions ランナー（CI） |
+| GitHub ActionsのPowerShellジョブ（windows-latest） | PASS | 2026-09-03、コミット`307c406`で `1..58 / pass=58 fail=0`、PSScriptAnalyzerも `PSScriptAnalyzer OK`。初回コミット`146a1b2`では `pass=54 fail=2`（PS-16がWindowsでのみ失敗） | GitHub Actions ランナー（CI） |
+| PSScriptAnalyzer（CI上） | PASS | 2026-09-03、ubuntu-latest・windows-latestの両方で指摘0件。ローカル環境ではPowerShell Galleryへ到達できず実行不可 | GitHub Actions ランナー（CI） |
+| Windows上でのPowerShell自動テスト | PASS | 2026-09-03、windows-latestランナー（Microsoft Windows Server 2025 / 10.0.26100 Datacenter、イメージ `windows-2025-vs2026`。ジョブログの「Operating System」で確認）。コミット`b28d3c4`で63/63成功（同コミットのLinuxは66件。差はOSごとに対象外・確認内容が変わるため） | GitHub Actions ランナー（CI） |
+| Ansibleパックの構文チェック・自動テスト | 記録なし | 2026-09-09にAIが追加（コミット `e1737c5`）。この台帳への実行記録はない | 記録なし |
+| セキュリティ強化パックの自動テスト（[43. テスト仕様](43-security-test-plan.md)） | 記録なし | 2026-09-09にAIが追加（コミット `a111f79`）。コミットメッセージに「46件全てok」とあるが、日時・環境・実行者を添えた記録はこの台帳にない | 記録なし |
+| 変更管理・復旧パックの自動テスト（[53. テスト仕様](53-change-test-plan.md)） | 記録なし | 2026-09-09にAIが追加（コミット `b364c24`・`4635cd1`）。この台帳への実行記録はない | 記録なし |
+| 実VMでのセキュリティ強化・変更適用・復元 | NOT RUN | 実Ubuntu VMが必要（[43](43-security-test-plan.md)・[53](53-change-test-plan.md)） | —（未実施） |
+| 全パックの自己完結テスト（Bash版の危険パス判定の修正後） | PASS | 2026-09-28、`make test` 82/82成功、終了0。下の「Bash版の危険パス判定の修正（2026-09-28）」を参照 | AI支援セッション（Claude Code）のLinuxコンテナ（root） |
+
+「実行者・実行環境」列は、2026-09-28に後から追加しました。各行の記録を追加したコミットの作者と、記録に書かれた環境から分かる範囲で書いています。`AI支援セッション` は、Claude Code などのAIツールが作業用のコンテナで実行した記録で、**本人が自分の端末で実行した記録ではありません。** 本人が実行した記録を追加するときは、この列に「島田則幸（本人）」と環境を書いてください。2026-09-09に追加したAnsible・セキュリティ強化・変更管理の3パックは、この台帳への実行記録がないため「記録なし」としています。
 
 ## ローカル検証記録
 
 ```text
 日時: 2026-08-28 Asia/Tokyo
 環境: Windows + Git for Windows Bash 5.3.15
+実行者: 記録から判別できない（記録を追加したコミット a9525e1 の作者は島田則幸。本人確認待ち）
 commit: 作業ツリー（未コミット）
 command: find scripts tests -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 exit code: 0
@@ -83,6 +91,7 @@ evidence: whitespace errorなし（改行コード変換の警告はあり）
 ```text
 日時: 2026-08-29 UTC
 環境: Linuxコンテナ、Ubuntu 24.04.4 LTS、root、GNU bash 5.2.21(1)-release
+実行者: AI支援セッション（Claude Code、コミット e0eec65）
 commit: 作業ツリー（未コミット）
 
 command: bash -n scripts/provision_web_server.sh && bash -n scripts/build_verify.sh
@@ -133,6 +142,7 @@ evidence: WEB_ROOT=/etc、HTTP_PORT範囲外、PACKAGE_NAME欠落のいずれも
 ```text
 日時:
 環境:
+実行者: 島田則幸（本人）／AI支援セッション（ツール名）
 commit:
 command:
 exit code:
@@ -177,6 +187,7 @@ bash exercises/labctl.sh evidence E09
 ```text
 日時: 2026-09-03 UTC
 環境: Ubuntu / Bash 5.2.21 / Python 3.11.15 / ShellCheck 0.9.0
+実行者: AI支援セッション（Claude Code、コミット c994ee0）
 commit: ce5052f
 
 command: make check
@@ -237,6 +248,7 @@ evidence: PR #8、Ubuntu runner（非root）で両ジョブ成功
 ```text
 日時: 2026-09-03 UTC
 環境: Linuxコンテナ、Ubuntu 24.04.4 LTS、root、PowerShell 7.4.6
+実行者: AI支援セッション（Claude Code）
 commit: 作業ツリー（未コミット）
 
 command: make ps-syntax
@@ -382,3 +394,45 @@ Windowsでは対象外となり、スキップした旨を1行で記録するた
 
 **このCIランナーはWindows Server 2025ですが、ジョブが実行しているのはドライランと検証ロジックまでで、IISを実際に構築したわけではありません。**
 役割の導入・サービスの自動起動・ファイアウォール規則の作成と到達性は、上の台帳のとおり `NOT RUN` のままです。
+
+### Bash版の危険パス判定の修正（2026-09-28）
+
+上の「レビューで見つかった不具合」でPowerShell版だけを直していた、保護ディレクトリ判定のすり抜けを、Bash版にも反映しました。
+
+```text
+日時: 2026-09-28 UTC
+環境: Linuxコンテナ、Ubuntu 24.04.4 LTS、root、GNU bash 5.2.21(1)-release、Python 3.11.15、ShellCheck（shellcheck-py で導入）
+実行者: AI支援セッション（Claude Code）
+commit: 47eac0c（修正）、8a7995d（README の最短手順の修正）
+
+症状: scripts/lib/common.sh の require_absolute_safe_path が文字列をそのまま比べていたため、
+      '//etc'、'/./etc'、'///etc'、'/etc/'、'///tmp'、'/usr/' が終了0で通っていた（'/etc' は終了2で拒否）。
+修正: 判定の前に normalize_path で連続した /、「.」の区切り、末尾の / をそろえるようにした。
+      シンボリックリンクはたどらない（realpath -m は /lib を /usr/lib にするため使わない）。
+      backup.sh の「保存先が保存元の配下か」の判定も、正規化した値で比べるようにした。
+回帰テスト: tests/run_tests.sh に PS-03 と同じ組み合わせ（//etc、/./etc、///etc、/etc/）と
+      ///tmp、/usr/、配下判定の別の書き方を追加。修正前のコードでは追加分14件が失敗することを確認。
+
+command: make test
+exit code: 0
+result: PASS
+evidence: Python単体テスト成功、tests/run_tests.sh 1..82 / pass=82 fail=0
+
+command: make lint
+exit code: 0
+result: PASS
+evidence: ShellCheck 指摘なし
+
+command: bash exercises/tests/test_labctl.sh
+exit code: 0
+result: PASS
+evidence: 1..37 / pass=37 fail=0
+
+command: README「最短5分の体験」の backup.sh（新しいクローン、空の HOME で実行）
+exit code: 設定例をそのまま指定すると 2、README の手順（$HOME/lab/src を作りパスを書き換え）では 0
+result: PASS
+evidence: 設定例の /srv/example-app/data は存在しないため終了2で拒否されることを確認し、
+  README に作業用ディレクトリの作成とパスの書き換え手順を追加した。書き換え後はドライランで終了0。
+```
+
+PowerShell（`make ps-test`）とAnsible（`make ansible-syntax`）は、この環境に `pwsh`・`ansible` が無いため実行していません（NOT RUN）。
