@@ -58,6 +58,7 @@
 | 変更管理・復旧パックの自動テスト | 台帳に記録なし | 2026-09-09にAIが追加（コミット `b364c24`・`4635cd1`）。日時・実行者を添えた記録はこの台帳にない。追加時の作業環境での確認結果（68件中68件ok）は[53. テスト仕様](53-change-test-plan.md)の「実際に確認した結果」にある | 記録なし（53の結果は追加時のAI支援セッションのコンテナ） |
 | 実VMでのセキュリティ強化・変更適用・復元 | NOT RUN | 実Ubuntu VMが必要（[43](43-security-test-plan.md)・[53](53-change-test-plan.md)） | —（未実施） |
 | 全パックの自己完結テスト（Bash版の危険パス判定の修正後） | PASS | 2026-09-28、`make test` 80/80成功、終了0。下の「Bash版の危険パス判定の修正（2026-09-28）」を参照 | AI支援セッション（Claude Code）のLinuxコンテナ（root） |
+| 全パックの自己完結テスト（snapshot_config.sh の重なり判定の修正後） | PASS | 2026-09-28、`make test` 88/88成功、終了0。下の「snapshot_config.sh の重なり判定の修正（2026-09-28）」を参照 | AI支援セッション（Claude Code）のLinuxコンテナ（root。非rootの nobody ユーザーでも `tests/run_tests.sh` 83/83） |
 
 「実行者・実行環境」列は、2026-09-28に後から追加しました。各行の記録を追加したコミットの作者と、記録に書かれた環境から分かる範囲で書いています。`AI支援セッション` は、Claude Code などのAIツールが作業用のコンテナで実行した記録で、**本人が自分の端末で実行した記録ではありません。** 本人が実行した記録を追加するときは、この列に「島田則幸（本人）」と環境を書いてください。2026-09-09に追加したAnsible・セキュリティ強化・変更管理の3パックは、この台帳に日時・実行者を添えた実行記録がないため「記録なし」としています（各テスト仕様書の「実際に確認した結果」は、パックを追加したAI支援セッションの作業用コンテナでの結果です）。なお、この3パックの自動テストは、2026-09-28の `make test` 80/80（上の表の最後の行）に含まれています（Ansibleの構文チェックは `ansible-playbook` 未導入のためスキップと記録）。
 
@@ -403,7 +404,8 @@ Windowsでは対象外となり、スキップした旨を1行で記録するた
 日時: 2026-09-28 UTC
 環境: Linuxコンテナ、Ubuntu 24.04.4 LTS、root、GNU bash 5.2.21(1)-release、Python 3.11.15、ShellCheck（shellcheck-py で導入）
 実行者: AI支援セッション（Claude Code）
-commit: 47eac0c（修正）、8a7995d（README の最短手順の修正）、およびこの記録を追加したコミット（backup.sh 30行目の変更を戻した）
+commit: aa75de8（PR #12。修正・README の最短手順の修正・backup.sh 30行目の変更の取り消し・この記録の追加を
+        1つにまとめた squash merge のコミット。作業ブランチ上のコミット 47eac0c・8a7995d などは main に残っていない）
 
 症状: scripts/lib/common.sh の require_absolute_safe_path が文字列をそのまま比べていたため、
       '//etc'、'/./etc'、'///etc'、'/etc/'、'///tmp'、'/usr/' が終了0で通っていた（'/etc' は終了2で拒否）。
@@ -414,6 +416,8 @@ commit: 47eac0c（修正）、8a7995d（README の最短手順の修正）、お
 残る課題: backup.sh の「保存先が保存元の配下か」の判定（30行目）は、今も文字列のまま比べている。
       '/x/./source/inner' のような書き方では配下と判定できない。30行目は Bash 演習（E02・E07・E09 など）が
       行番号と形を見本として参照しているため、今回は変更していない（変更すると make lab-selfcheck の E02 が失敗することを確認）。
+      snapshot_config.sh の SNAPSHOT_DIR と SNAPSHOT_TARGETS の重なりの判定も文字列のまま比べていた
+      （下の「snapshot_config.sh の重なり判定の修正（2026-09-28）」で修正済み）。
 
 command: make test
 exit code: 0
@@ -441,6 +445,52 @@ exit code: 設定例をそのまま指定すると 2、README の手順（$HOME/
 result: PASS
 evidence: 設定例の /srv/example-app/data は存在しないため終了2で拒否されることを確認し、
   README に作業用ディレクトリの作成とパスの書き換え手順を追加した。書き換え後はドライランで終了0。
+```
+
+PowerShell（`make ps-test`）とAnsible（`make ansible-syntax`）は、この環境に `pwsh`・`ansible` が無いため実行していません（NOT RUN）。
+
+### snapshot_config.sh の重なり判定の修正（2026-09-28）
+
+上の「Bash版の危険パス判定の修正」と同じ種類のすり抜けが、`scripts/snapshot_config.sh` の「`SNAPSHOT_DIR` と `SNAPSHOT_TARGETS` が重なっていないか」の判定に残っていたため修正しました。
+
+```text
+日時: 2026-09-28 UTC
+環境: Linuxコンテナ、Ubuntu 24.04.4 LTS、root、GNU bash 5.2.21(1)-release、Python 3.11.15、ShellCheck 0.11.0
+実行者: AI支援セッション（Claude Code）
+commit: この記録を追加したブランチ claude/optimistic-hypatia-edr1uy のコミット（main へのマージ方法によってハッシュが変わるため、ここには書かない）
+
+症状: SNAPSHOT_DIR と SNAPSHOT_TARGETS の各要素を文字列の前方一致のまま比べていたため、
+      SNAPSHOT_DIR=<B>/app/snaps のとき、SNAPSHOT_TARGETS に '<B>//app' や '<B>/./app' と書くと
+      重なりとして拒否されず、処理が先へ進んでいた（'<B>/app' と '<B>/app/' は拒否されていた）。
+修正: 比べる前に、両方の値を common.sh の normalize_path（危険パス判定と同じ関数）で正規化するようにした。
+      snapshot_config.sh の行番号を参照している演習・文書が無いことを grep で確認した。
+      common.sh と backup.sh は変更していない（演習が行番号を参照しているため）。
+回帰テスト: tests/run_tests.sh に '<B>/app'、'<B>//app'、'<B>/./app'、'<B>/app/' の4通りを追加（各2アサーション）。
+      修正前のコードでは追加分のうち '//app'・'/./app' の4件が失敗する（終了2ではなく1）ことを確認。
+残る課題: backup.sh 30行目の配下判定は、上の記録のとおり文字列比較のまま（演習の見本のため未変更）。
+      restore_config.sh の同種の判定は、書き方の違いで拒否側に倒れる（すり抜けない）ため変更していない。
+      重なり判定は前方一致のため、'<B>/app' と '<B>/app2' のように重なっていない組み合わせも拒否される（安全側）。
+
+command: make check（bash -n と make test）
+exit code: 0
+result: PASS
+evidence: Python単体テスト成功、tests/run_tests.sh 1..88 / pass=88 fail=0
+  （ansible-playbook 未導入のため Ansible 構文チェックは "skipped" として ok 扱い）
+
+command: tests/run_tests.sh（nobody ユーザー、CI と同じ非root）
+exit code: 0
+result: PASS
+evidence: 1..83 / pass=83 fail=0（root 権限が必要な --execute の確認は非rootの拒否確認に置き換わるため件数が異なる）
+
+command: make lint / make lab-lint
+exit code: 0 / 0
+result: PASS
+evidence: ShellCheck 0.11.0 指摘なし
+
+command: make lab-selfcheck
+exit code: 0
+result: PASS
+evidence: 採点器の自己検査 1..46 / pass=46 fail=0、採点ツールのテスト 1..37 / pass=37 fail=0
 ```
 
 PowerShell（`make ps-test`）とAnsible（`make ansible-syntax`）は、この環境に `pwsh`・`ansible` が無いため実行していません（NOT RUN）。
