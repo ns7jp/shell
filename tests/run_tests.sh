@@ -392,6 +392,19 @@ chmod 600 "$tmp_dir/change_danger.conf"
 assert_status 'snapshot rejects dangerous SNAPSHOT_DIR' 2 bash "$ROOT_DIR/scripts/snapshot_config.sh" --config "$tmp_dir/change_danger.conf"
 assert_contains 'dangerous SNAPSHOT_DIR explains cause' '重要なシステムディレクトリ'
 
+# SNAPSHOT_DIR が SNAPSHOT_TARGETS の配下にある（重なっている）設定は拒否します。
+# 文字列の前方一致だけで比べると、'<B>//app' や '<B>/./app' のように同じ場所を指す
+# 別の書き方がすり抜けるため、正規化した値で比べていることを確認します。
+for overlap_target in "$tmp_dir/overlap_base/app" "$tmp_dir/overlap_base//app" "$tmp_dir/overlap_base/./app" "$tmp_dir/overlap_base/app/"; do
+  cat >"$tmp_dir/change_overlap.conf" <<EOF
+SNAPSHOT_DIR=$tmp_dir/overlap_base/app/snaps
+SNAPSHOT_TARGETS="$overlap_target"
+EOF
+  chmod 600 "$tmp_dir/change_overlap.conf"
+  assert_status "snapshot rejects overlapping SNAPSHOT_TARGETS: $overlap_target" 2 bash "$ROOT_DIR/scripts/snapshot_config.sh" --config "$tmp_dir/change_overlap.conf"
+  assert_contains "overlap of $overlap_target explains cause" 'SNAPSHOT_DIR とSNAPSHOT_TARGETSが重なっています'
+done
+
 cat >"$tmp_dir/change_no_target.conf" <<EOF
 SNAPSHOT_DIR=$tmp_dir/change_snapshots
 SNAPSHOT_TARGETS="$tmp_dir/other_dir"

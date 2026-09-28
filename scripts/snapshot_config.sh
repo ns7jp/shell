@@ -30,9 +30,12 @@ load_config "$config_path"
 [[ -n ${SNAPSHOT_TARGETS:-} ]] || die 'SNAPSHOT_TARGETS は必須です'
 require_absolute_safe_path SNAPSHOT_DIR "$SNAPSHOT_DIR"
 [[ $label =~ ^[A-Za-z0-9_-]{1,64}$ ]] || die "--label に使用できない文字があります: $label"
+# 重なりの判定も、'//app' や '/./app' のような別の書き方ですり抜けないよう、正規化してから比べます。
+snapshot_dir_normalized=$(normalize_path "$SNAPSHOT_DIR")
 for target in $SNAPSHOT_TARGETS; do
   require_absolute_safe_path SNAPSHOT_TARGETS "$target"
-  [[ $SNAPSHOT_DIR != "$target"* && $target != "$SNAPSHOT_DIR"* ]] \
+  target_normalized=$(normalize_path "$target")
+  [[ $snapshot_dir_normalized != "$target_normalized"* && $target_normalized != "$snapshot_dir_normalized"* ]] \
     || die "SNAPSHOT_DIR とSNAPSHOT_TARGETSが重なっています: $target"
 done
 require_command find
